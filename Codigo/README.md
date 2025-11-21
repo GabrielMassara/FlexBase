@@ -1,6 +1,6 @@
-# FlexBase - Sistema CRUD Completo
+# FlexBase
 
-Este projeto implementa um sistema CRUD completo seguindo o padrão arquitetural do NAVICODE, com todas as funcionalidades necessárias para gerenciar usuários, aplicações, endpoints e registros.
+FlexBase é uma plataforma de Backend as a Service (BaaS) que transforma modelos de banco de dados relacionais em APIs completas e prontas para uso em poucos minutos.
 
 ## 🗃️ Estrutura do Banco de Dados
 

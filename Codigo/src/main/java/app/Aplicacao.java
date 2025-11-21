@@ -32,24 +32,24 @@ public class Aplicacao {
         port(80);
         staticFiles.location("/public");
         
-        // ROTA PÚBLICA
-        post("/api/entrar", (request, response) -> apiService.entrar(request, response));
-        
         before((request, response) -> {
             response.header("Access-Control-Allow-Origin", "*");
             response.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS");
             response.header("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Requested-With,Content-Length,Accept,Origin");
         });
         
+        // ROTAS PÚBLICAS (ANTES DO FILTRO DE AUTENTICAÇÃO)
+        post("/api/entrar", (request, response) -> apiService.entrar(request, response));
+        post("/api/login", (request, response) -> usuarioService.login(request, response));
+        post("/api/usuarios", (request, response) -> usuarioService.inserir(request, response)); // Cadastro público
+        
         // ROTAS PROTEGIDAS - APLICAR FILTROS ANTES DAS ROTAS (Comentado para facilitar testes iniciais)
         // before("/api/*", AuthFilter.authenticate);
         
-        // === ROTAS USUARIOS ===
-        post("/api/login", (request, response) -> usuarioService.login(request, response));
+        // === ROTAS USUARIOS (PROTEGIDAS) ===
         get("/api/usuarios", (request, response) -> usuarioService.listar(request, response));
         get("/api/usuarios/:id", (request, response) -> usuarioService.buscarPorId(request, response));
         post("/api/usuarios/buscar", (request, response) -> usuarioService.buscarComFiltro(request, response));
-        post("/api/usuarios", (request, response) -> usuarioService.inserir(request, response));
         put("/api/usuarios/:id", (request, response) -> usuarioService.atualizar(request, response));
         delete("/api/usuarios/:id", (request, response) -> usuarioService.excluir(request, response));
         

@@ -40,24 +40,19 @@ public class ApiService {
 			ApiDAO apiDAO = new ApiDAO();
 			ResultSet rs = apiDAO.entrar(filtro);
 			
-			if (rs != null && rs.next()) {
+            if (rs != null && rs.next()) {
 				//SE TIVER DADOS NA RESPOSTA É PQ O LOGIN FOI VALIDADO
 				int userId = rs.getInt("id");
 				String nome = rs.getString("nome");
 				String email = rs.getString("email");
-				boolean administrador = rs.getBoolean("administrador");
-				int pontos = rs.getInt("pontos");
-				String descricao = rs.getString("descricao");
-				String foto = rs.getString("foto");
 				
 				// GERAR TOKEN JWT
-				String token = JwtUtil.generateToken(userId, email, administrador);
+				String token = JwtUtil.generateToken(userId, email);
 				
 				if (token != null) {
 					// CRIA A RESPOSTA DO ENDPOINT
-					UsuarioDTO usuarioDTO = new UsuarioDTO(userId, nome, email, administrador, pontos, descricao, foto);
+					UsuarioDTO usuarioDTO = new UsuarioDTO(userId, nome, email);
 					LoginResponseDTO loginResponse = new LoginResponseDTO(true, token, "Login realizado com sucesso", usuarioDTO);
-					
 					response.status(200);
 					return mapper.writeValueAsString(loginResponse);
 				} else {

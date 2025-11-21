@@ -34,6 +34,24 @@ public class JwtUtil {
         }
     }
     
+    //GERA O TOKEN DO USUARIO
+    public static String generateToken(int userId, String email) {
+        try {
+            Date expiresAt = new Date(System.currentTimeMillis() + EXPIRATION_TIME);
+            
+            return JWT.create()
+                    .withIssuer(ISSUER)
+                    .withSubject(String.valueOf(userId))
+                    .withClaim("email", email)
+                    .withExpiresAt(expiresAt)
+                    .withIssuedAt(new Date())
+                    .sign(algorithm);
+        } catch (JWTCreationException exception) {
+            System.err.println("Erro ao criar token JWT: " + exception.getMessage());
+            return null;
+        }
+    }
+    
     //VALIDA O TOKEN
     public static DecodedJWT validateToken(String token) {
         try {

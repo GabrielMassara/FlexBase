@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlexBase</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/db.css">
+</head>
+<body>
+    <!-- Floating Glass Navbar -->
+    <nav class="floating-navbar">
+        <div class="navbar-content">
+            <div class="navbar-brand">
+                <h1 class="logo"><img src="../../assets/img/logo.png" alt="" width="30px"></h1>
+            </div>
+            <div class="navbar-actions">
+                <button id="addTableBtn" class="btn-glass btn-primary">
+                    <i class="bi bi-plus-lg"></i>
+                    <span>Nova Tabela</span>
+                </button>
+                <button id="addRelationshipBtn" class="btn-glass btn-secondary">
+                    <i class="bi bi-arrow-left-right"></i>
+                    <span>Relacionamento</span>
+                </button>
+                <button id="centerElementsBtn" class="btn-glass btn-secondary">
+                    <i class="bi bi-bullseye"></i>
+                    <span>Centralizar</span>
+                </button>
+                <button id="themeToggle" class="btn-glass btn-theme">
+                    <i class="bi bi-sun"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-container d-flex" style="height: 100vh;">
+        <!-- Floating Glass Sidebar -->
+        <aside class="floating-sidebar">
+            <div class="sidebar-content">
+                <div class="sidebar-section mb-4">
+                    <h5 class="sidebar-title">Tabelas</h5>
+                    <div id="tablesList" class="tables-list"></div>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h5 class="sidebar-title">Propriedades</h5>
+                    <div id="propertiesPanel" class="properties-panel">
+                        <p class="text-muted text-center m-0">Selecione uma tabela ou campo</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <section class="canvas-container position-relative overflow-auto" style="width: 100%;">
+            <div id="canvas" class="canvas bg-body position-relative" style="min-height: 100%; min-width: 100%;">
+                <div class="canvas-grid position-absolute top-0 start-0 w-100 h-100"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal para adicionar/editar tabela -->
+    <div class="modal fade" id="tableModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Nova Tabela</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="tableName" class="form-label">Nome da Tabela:</label>
+                        <input type="text" id="tableName" class="form-control" placeholder="Ex: usuarios">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Campos:</label>
+                        <div id="fieldsList" class="border rounded p-2 mb-2" style="min-height: 100px;"></div>
+                        <button type="button" id="addFieldBtn" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-plus-lg me-1"></i>Adicionar Campo
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="saveTableBtn" class="btn btn-primary" onclick="if(window.saveTable) window.saveTable();">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para adicionar relacionamento -->
+    <div class="modal fade" id="relationshipModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Novo Relacionamento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="sourceTable" class="form-label">Tabela de Origem:</label>
+                        <select id="sourceTable" class="form-select">
+                            <option value="">Selecione uma tabela</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="sourceField" class="form-label">Campo de Origem:</label>
+                        <select id="sourceField" class="form-select">
+                            <option value="">Selecione um campo</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="targetTable" class="form-label">Tabela de Destino:</label>
+                        <select id="targetTable" class="form-select">
+                            <option value="">Selecione uma tabela</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="targetField" class="form-label">Campo de Destino:</label>
+                        <select id="targetField" class="form-select">
+                            <option value="">Selecione um campo</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="relationType" class="form-label">Tipo de Relacionamento:</label>
+                        <select id="relationType" class="form-select">
+                            <option value="belongsTo">Belongs To (N:1)</option>
+                            <option value="hasMany">Has Many (1:N)</option>
+                            <option value="hasOne">Has One (1:1)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="saveRelationshipBtn" class="btn btn-primary">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Verificação adicional para garantir que o botão funcione
+        window.addEventListener('load', function() {
+            // Verificar se todos os elementos estão presentes
+            const saveBtn = document.getElementById('saveTableBtn');
+            if (saveBtn) {
+                // Adicionar event listener adicional como backup
+                saveBtn.onclick = function(e) {
+                    e.preventDefault();
+                    if (window.saveTable) {
+                        window.saveTable();
+                    }
+                };
+            }
+        });
+    </script>
+    <script src="../../assets/js/db.js"></script>
+</body>
+</html>

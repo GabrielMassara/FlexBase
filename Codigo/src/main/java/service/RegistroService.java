@@ -24,6 +24,14 @@ public class RegistroService {
         JsonMapper mapper = JsonMapper.builder().build();
         
         try {
+            // Obter informações do usuário logado através do token de autenticação
+            Integer idUsuario = request.attribute("userId");
+            
+            if (idUsuario == null) {
+                response.status(401);
+                return criarRespostaErro(mapper, "Token de autenticação inválido");
+            }
+            
             RegistroDAO registroDAO = new RegistroDAO();
             AplicacaoDAO aplicacaoDAO = new AplicacaoDAO();
             List<Registro> registros = registroDAO.listarTodos();
@@ -31,15 +39,19 @@ public class RegistroService {
             
             for (Registro registro : registros) {
                 Aplicacao aplicacao = aplicacaoDAO.buscarPorId(registro.getIdAplicacao());
-                String nomeAplicacao = aplicacao != null ? aplicacao.getNome() : "Aplicação não encontrada";
                 
-                registrosDTO.add(new RegistroDTO(
-                    registro.getId(),
-                    registro.getTabela(),
-                    registro.getValor(),
-                    registro.getIdAplicacao(),
-                    nomeAplicacao
-                ));
+                // Filtrar registros apenas das aplicações que o usuário pode acessar
+                if (aplicacao != null && aplicacao.getIdUsuario() == idUsuario.intValue()) {
+                    String nomeAplicacao = aplicacao.getNome();
+                
+                    registrosDTO.add(new RegistroDTO(
+                        registro.getId(),
+                        registro.getTabela(),
+                        registro.getValor(),
+                        registro.getIdAplicacao(),
+                        nomeAplicacao
+                    ));
+                }
             }
             
             return mapper.writeValueAsString(registrosDTO);

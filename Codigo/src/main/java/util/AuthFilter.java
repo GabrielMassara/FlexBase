@@ -42,25 +42,21 @@ public class AuthFilter {
         // RETORNA OS DADOS DO USUÁRIO
         int userId = JwtUtil.getUserIdFromToken(token);
         String userEmail = JwtUtil.getEmailFromToken(token);
-        boolean isAdmin = JwtUtil.isAdminFromToken(token);
         
-        request.attribute("userId", userId);
+        // VERIFICAR SE O USERID É VÁLIDO
+        if (userId == -1) {
+            response.status(401);
+            JsonMapper mapper = JsonMapper.builder().build();
+            LoginResponseDTO errorResponse = new LoginResponseDTO(false, "Erro ao extrair dados do token");
+            response.body(mapper.writeValueAsString(errorResponse));
+            Spark.halt(401);
+            return;
+        }
+        
+        request.attribute("userId", Integer.valueOf(userId));
         request.attribute("userEmail", userEmail);
-        request.attribute("isAdmin", isAdmin);
     };
     
 
-    //VERIFICA SE O USUÁRIO É ADM
-    public static Filter requireAdmin = (Request request, Response response) -> {
-        Boolean isAdmin = request.attribute("isAdmin");
-        
-        if (isAdmin == null || !isAdmin) {
-            response.status(403);
-            response.type("application/json");
-            JsonMapper mapper = JsonMapper.builder().build();
-            LoginResponseDTO errorResponse = new LoginResponseDTO(false, "Acesso negado. Privilégios de administrador necessários");
-            response.body(mapper.writeValueAsString(errorResponse));
-            Spark.halt(403);
-        }
-    };
+
 }

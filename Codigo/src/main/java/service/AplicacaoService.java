@@ -24,9 +24,20 @@ public class AplicacaoService {
         JsonMapper mapper = JsonMapper.builder().build();
         
         try {
+            // Obter informações do usuário logado através do token de autenticação
+            Integer idUsuario = request.attribute("userId");
+            
+            if (idUsuario == null) {
+                response.status(401);
+                return criarRespostaErro(mapper, "Token de autenticação inválido");
+            }
+            
             AplicacaoDAO aplicacaoDAO = new AplicacaoDAO();
             UsuarioDAO usuarioDAO = new UsuarioDAO();
-            List<Aplicacao> aplicacoes = aplicacaoDAO.listarTodos();
+            
+            // Listar apenas as aplicações do usuário logado
+            List<Aplicacao> aplicacoes = aplicacaoDAO.buscarPorUsuario(idUsuario);
+            
             List<AplicacaoDTO> aplicacoesDTO = new ArrayList<>();
             
             for (Aplicacao aplicacao : aplicacoes) {
@@ -57,6 +68,14 @@ public class AplicacaoService {
         JsonMapper mapper = JsonMapper.builder().build();
         
         try {
+            // Obter informações do usuário logado através do token de autenticação
+            Integer idUsuario = request.attribute("userId");
+            
+            if (idUsuario == null) {
+                response.status(401);
+                return criarRespostaErro(mapper, "Token de autenticação inválido");
+            }
+            
             int id = Integer.parseInt(request.params(":id"));
             AplicacaoDAO aplicacaoDAO = new AplicacaoDAO();
             UsuarioDAO usuarioDAO = new UsuarioDAO();
@@ -65,6 +84,12 @@ public class AplicacaoService {
             if (aplicacao == null) {
                 response.status(404);
                 return criarRespostaErro(mapper, "Aplicação não encontrada");
+            }
+            
+            // Verificar se o usuário tem permissão para visualizar esta aplicação
+            if (aplicacao.getIdUsuario() != idUsuario.intValue()) {
+                response.status(403);
+                return criarRespostaErro(mapper, "Você não tem permissão para visualizar esta aplicação");
             }
             
             Usuario usuario = usuarioDAO.buscarPorId(aplicacao.getIdUsuario());
@@ -96,7 +121,13 @@ public class AplicacaoService {
         JsonMapper mapper = JsonMapper.builder().build();
         
         try {
-            int idUsuario = Integer.parseInt(request.params(":idUsuario"));
+            // Obter ID do usuário logado através do token de autenticação
+            Integer idUsuario = request.attribute("userId");
+            if (idUsuario == null) {
+                response.status(401);
+                return criarRespostaErro(mapper, "Token de autenticação inválido");
+            }
+            
             AplicacaoDAO aplicacaoDAO = new AplicacaoDAO();
             UsuarioDAO usuarioDAO = new UsuarioDAO();
             List<Aplicacao> aplicacoes = aplicacaoDAO.buscarPorUsuario(idUsuario);
@@ -118,9 +149,6 @@ public class AplicacaoService {
             }
             
             return mapper.writeValueAsString(aplicacoesDTO);
-        } catch (NumberFormatException e) {
-            response.status(400);
-            return criarRespostaErro(mapper, "ID de usuário inválido");
         } catch (Exception e) {
             e.printStackTrace();
             response.status(500);
@@ -133,6 +161,14 @@ public class AplicacaoService {
         JsonMapper mapper = JsonMapper.builder().build();
         
         try {
+            // Obter informações do usuário logado através do token de autenticação
+            Integer idUsuario = request.attribute("userId");
+            
+            if (idUsuario == null) {
+                response.status(401);
+                return criarRespostaErro(mapper, "Token de autenticação inválido");
+            }
+            
             AplicacaoFilterDTO filtro = null;
             try {
                 if (request.body() != null && !request.body().isEmpty()) {
@@ -143,15 +179,19 @@ public class AplicacaoService {
                 return criarRespostaErro(mapper, "JSON inválido");
             }
             
+            // Forçar filtro pelo usuário logado
+            if (filtro == null) {
+                filtro = new AplicacaoFilterDTO();
+            }
+            
+            // Usuário só pode ver suas próprias aplicações
+            filtro.setIdUsuario(idUsuario);
+            
             AplicacaoDAO aplicacaoDAO = new AplicacaoDAO();
             UsuarioDAO usuarioDAO = new UsuarioDAO();
             List<Aplicacao> aplicacoes;
             
-            if (filtro != null) {
-                aplicacoes = aplicacaoDAO.buscarComFiltro(filtro);
-            } else {
-                aplicacoes = aplicacaoDAO.listarTodos();
-            }
+            aplicacoes = aplicacaoDAO.buscarComFiltro(filtro);
             
             List<AplicacaoDTO> aplicacoesDTO = new ArrayList<>();
             for (Aplicacao aplicacao : aplicacoes) {
@@ -184,16 +224,25 @@ public class AplicacaoService {
         try {
             Aplicacao aplicacao = mapper.readValue(request.body(), new TypeReference<Aplicacao>() {});
             
-            if (aplicacao.getNome() == null || aplicacao.getNome().trim().isEmpty() ||
-                aplicacao.getIdUsuario() <= 0) {
+            // Obter ID do usuário logado através do token de autenticação
+            Integer idUsuario = request.attribute("userId");
+            if (idUsuario == null) {
+                response.status(401);
+                return criarRespostaErro(mapper, "Token de autenticação inválido");
+            }
+            
+            // Definir o ID do usuário logado na aplicação
+            aplicacao.setIdUsuario(idUsuario);
+            
+            if (aplicacao.getNome() == null || aplicacao.getNome().trim().isEmpty()) {
                 response.status(400);
-                return criarRespostaErro(mapper, "Nome e ID do usuário são obrigatórios");
+                return criarRespostaErro(mapper, "Nome é obrigatório");
             }
             
             AplicacaoDAO aplicacaoDAO = new AplicacaoDAO();
             UsuarioDAO usuarioDAO = new UsuarioDAO();
             
-            // Verificar se usuário existe
+            // Verificar se usuário existe (redundante, mas mantém a validação)
             if (usuarioDAO.buscarPorId(aplicacao.getIdUsuario()) == null) {
                 response.status(400);
                 return criarRespostaErro(mapper, "Usuário não encontrado");
@@ -221,6 +270,14 @@ public class AplicacaoService {
         JsonMapper mapper = JsonMapper.builder().build();
         
         try {
+            // Obter informações do usuário logado através do token de autenticação
+            Integer idUsuario = request.attribute("userId");
+            
+            if (idUsuario == null) {
+                response.status(401);
+                return criarRespostaErro(mapper, "Token de autenticação inválido");
+            }
+            
             int id = Integer.parseInt(request.params(":id"));
             Aplicacao aplicacao = mapper.readValue(request.body(), new TypeReference<Aplicacao>() {});
             aplicacao.setId(id);
@@ -233,10 +290,20 @@ public class AplicacaoService {
             AplicacaoDAO aplicacaoDAO = new AplicacaoDAO();
             
             // Verificar se aplicação existe
-            if (aplicacaoDAO.buscarPorId(id) == null) {
+            Aplicacao aplicacaoExistente = aplicacaoDAO.buscarPorId(id);
+            if (aplicacaoExistente == null) {
                 response.status(404);
                 return criarRespostaErro(mapper, "Aplicação não encontrada");
             }
+            
+            // Verificar se o usuário tem permissão para atualizar esta aplicação
+            if (aplicacaoExistente.getIdUsuario() != idUsuario.intValue()) {
+                response.status(403);
+                return criarRespostaErro(mapper, "Você não tem permissão para atualizar esta aplicação");
+            }
+            
+            // Manter o ID do usuário original da aplicação
+            aplicacao.setIdUsuario(aplicacaoExistente.getIdUsuario());
             
             if (aplicacaoDAO.atualizar(aplicacao)) {
                 return criarRespostaSucesso(mapper, "Aplicação atualizada com sucesso");
@@ -262,12 +329,28 @@ public class AplicacaoService {
         JsonMapper mapper = JsonMapper.builder().build();
         
         try {
+            // Obter informações do usuário logado através do token de autenticação
+            Integer idUsuario = request.attribute("userId");
+            
+            if (idUsuario == null) {
+                response.status(401);
+                return criarRespostaErro(mapper, "Token de autenticação inválido");
+            }
+            
             int id = Integer.parseInt(request.params(":id"));
             AplicacaoDAO aplicacaoDAO = new AplicacaoDAO();
             
-            if (aplicacaoDAO.buscarPorId(id) == null) {
+            // Verificar se aplicação existe
+            Aplicacao aplicacaoExistente = aplicacaoDAO.buscarPorId(id);
+            if (aplicacaoExistente == null) {
                 response.status(404);
                 return criarRespostaErro(mapper, "Aplicação não encontrada");
+            }
+            
+            // Verificar se o usuário tem permissão para excluir esta aplicação
+            if (aplicacaoExistente.getIdUsuario() != idUsuario.intValue()) {
+                response.status(403);
+                return criarRespostaErro(mapper, "Você não tem permissão para excluir esta aplicação");
             }
             
             if (aplicacaoDAO.excluir(id)) {

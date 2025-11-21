@@ -43,8 +43,16 @@ public class Aplicacao {
         post("/api/login", (request, response) -> usuarioService.login(request, response));
         post("/api/usuarios", (request, response) -> usuarioService.inserir(request, response)); // Cadastro público
         
-        // ROTAS PROTEGIDAS - APLICAR FILTROS ANTES DAS ROTAS (Comentado para facilitar testes iniciais)
-        // before("/api/*", AuthFilter.authenticate);
+        // FILTRO DE AUTENTICAÇÃO PARA TODAS AS OUTRAS ROTAS /api/*
+        // Exceto as rotas públicas já definidas acima
+        before("/api/usuarios", "GET", AuthFilter.authenticate); // Proteger GET de usuários
+        before("/api/usuarios/*", AuthFilter.authenticate); // Proteger rotas específicas de usuário
+        before("/api/aplicacoes", AuthFilter.authenticate);
+        before("/api/aplicacoes/*", AuthFilter.authenticate);
+        before("/api/endpoints", AuthFilter.authenticate);
+        before("/api/endpoints/*", AuthFilter.authenticate);
+        before("/api/registros", AuthFilter.authenticate);
+        before("/api/registros/*", AuthFilter.authenticate);
         
         // === ROTAS USUARIOS (PROTEGIDAS) ===
         get("/api/usuarios", (request, response) -> usuarioService.listar(request, response));
@@ -56,7 +64,7 @@ public class Aplicacao {
         // === ROTAS APLICACOES ===
         get("/api/aplicacoes", (request, response) -> aplicacaoService.listar(request, response));
         get("/api/aplicacoes/:id", (request, response) -> aplicacaoService.buscarPorId(request, response));
-        get("/api/aplicacoes/usuario/:idUsuario", (request, response) -> aplicacaoService.buscarPorUsuario(request, response));
+        get("/api/aplicacoes/minhas", (request, response) -> aplicacaoService.buscarPorUsuario(request, response));
         post("/api/aplicacoes/buscar", (request, response) -> aplicacaoService.buscarComFiltro(request, response));
         post("/api/aplicacoes", (request, response) -> aplicacaoService.inserir(request, response));
         put("/api/aplicacoes/:id", (request, response) -> aplicacaoService.atualizar(request, response));

@@ -15,24 +15,7 @@ public class JwtUtil {
     
     private static final Algorithm algorithm = Algorithm.HMAC256(SECRET);
     
-    //GERA O TOKEN DO USUARIO
-    public static String generateToken(int userId, String email, boolean isAdmin) {
-        try {
-            Date expiresAt = new Date(System.currentTimeMillis() + EXPIRATION_TIME);
-            
-            return JWT.create()
-                    .withIssuer(ISSUER)
-                    .withSubject(String.valueOf(userId))
-                    .withClaim("email", email)
-                    .withClaim("admin", isAdmin)
-                    .withExpiresAt(expiresAt)
-                    .withIssuedAt(new Date())
-                    .sign(algorithm);
-        } catch (JWTCreationException exception) {
-            System.err.println("Erro ao criar token JWT: " + exception.getMessage());
-            return null;
-        }
-    }
+
     
     //GERA O TOKEN DO USUARIO
     public static String generateToken(int userId, String email) {
@@ -100,14 +83,7 @@ public class JwtUtil {
         return getUserIdFromToken(token);
     }
     
-    //VERIFICA SE O USUARIO É ADM
-    public static boolean isAdminFromToken(String token) {
-        DecodedJWT decodedJWT = validateToken(token);
-        if (decodedJWT != null) {
-            return decodedJWT.getClaim("admin").asBoolean();
-        }
-        return false;
-    }
+
     
     //VERIFICA SE O TOKEN JA EXPIROU
     public static boolean isTokenExpired(String token) {

@@ -15,6 +15,13 @@ public class UsuarioDTO {
         this.email = email;
     }
     
+    // Construtor para login
+    public UsuarioDTO(int id, String nome, String email) {
+        this.id = id;
+        this.nome = nome;
+        this.email = email;
+    }
+    
     public int getId() {
         return id;
     }

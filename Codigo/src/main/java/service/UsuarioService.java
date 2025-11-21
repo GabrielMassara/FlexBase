@@ -4,6 +4,8 @@ import dao.UsuarioDAO;
 import model.Usuario;
 import filterDTO.UsuarioFilterDTO;
 import responseDTO.UsuarioDTO;
+import responseDTO.LoginResponseDTO;
+import util.JwtUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -260,6 +262,14 @@ public class UsuarioService {
                 return criarRespostaErro(mapper, "Email ou senha inválidos");
             }
             
+            // Gerar token JWT
+            String token = JwtUtil.generateToken(usuario.getId(), usuario.getEmail());
+            
+            if (token == null) {
+                response.status(500);
+                return criarRespostaErro(mapper, "Erro ao gerar token de autenticação");
+            }
+            
             UsuarioDTO usuarioDTO = new UsuarioDTO(
                 usuario.getId(),
                 usuario.getNome(),
@@ -267,12 +277,10 @@ public class UsuarioService {
                 usuario.getEmail()
             );
             
-            Map<String, Object> resposta = new HashMap<>();
-            resposta.put("success", true);
-            resposta.put("message", "Login realizado com sucesso");
-            resposta.put("usuario", usuarioDTO);
+            LoginResponseDTO loginResponse = new LoginResponseDTO(true, token, "Login realizado com sucesso", usuarioDTO);
+            response.status(200);
             
-            return mapper.writeValueAsString(resposta);
+            return mapper.writeValueAsString(loginResponse);
         } catch (JsonProcessingException e) {
             response.status(400);
             return criarRespostaErro(mapper, "JSON inválido");

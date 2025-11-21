@@ -26,6 +26,14 @@ public class EndpointService {
         JsonMapper mapper = JsonMapper.builder().build();
         
         try {
+            // Obter informações do usuário logado através do token de autenticação
+            Integer idUsuario = request.attribute("userId");
+            
+            if (idUsuario == null) {
+                response.status(401);
+                return criarRespostaErro(mapper, "Token de autenticação inválido");
+            }
+            
             EndpointDAO endpointDAO = new EndpointDAO();
             AplicacaoDAO aplicacaoDAO = new AplicacaoDAO();
             List<Endpoint> endpoints = endpointDAO.listarTodos();
@@ -33,18 +41,22 @@ public class EndpointService {
             
             for (Endpoint endpoint : endpoints) {
                 Aplicacao aplicacao = aplicacaoDAO.buscarPorId(endpoint.getIdAplicacao());
-                String nomeAplicacao = aplicacao != null ? aplicacao.getNome() : "Aplicação não encontrada";
-                String metodoNome = getMetodoNome(endpoint.getMetodo());
                 
-                endpointsDTO.add(new EndpointDTO(
-                    endpoint.getId(),
-                    endpoint.getIdAplicacao(),
-                    nomeAplicacao,
-                    endpoint.getRota(),
-                    endpoint.getQuery(),
-                    endpoint.getMetodo(),
-                    metodoNome
-                ));
+                // Filtrar endpoints apenas das aplicações que o usuário pode acessar
+                if (aplicacao != null && aplicacao.getIdUsuario() == idUsuario.intValue()) {
+                    String nomeAplicacao = aplicacao.getNome();
+                    String metodoNome = getMetodoNome(endpoint.getMetodo());
+                
+                    endpointsDTO.add(new EndpointDTO(
+                        endpoint.getId(),
+                        endpoint.getIdAplicacao(),
+                        nomeAplicacao,
+                        endpoint.getRota(),
+                        endpoint.getQuery(),
+                        endpoint.getMetodo(),
+                        metodoNome
+                    ));
+                }
             }
             
             return mapper.writeValueAsString(endpointsDTO);
@@ -60,6 +72,14 @@ public class EndpointService {
         JsonMapper mapper = JsonMapper.builder().build();
         
         try {
+            // Obter informações do usuário logado através do token de autenticação
+            Integer idUsuario = request.attribute("userId");
+            
+            if (idUsuario == null) {
+                response.status(401);
+                return criarRespostaErro(mapper, "Token de autenticação inválido");
+            }
+            
             int id = Integer.parseInt(request.params(":id"));
             EndpointDAO endpointDAO = new EndpointDAO();
             AplicacaoDAO aplicacaoDAO = new AplicacaoDAO();
@@ -71,7 +91,18 @@ public class EndpointService {
             }
             
             Aplicacao aplicacao = aplicacaoDAO.buscarPorId(endpoint.getIdAplicacao());
-            String nomeAplicacao = aplicacao != null ? aplicacao.getNome() : "Aplicação não encontrada";
+            if (aplicacao == null) {
+                response.status(404);
+                return criarRespostaErro(mapper, "Aplicação não encontrada");
+            }
+            
+            // Verificar se o usuário tem permissão para visualizar este endpoint
+            if (aplicacao.getIdUsuario() != idUsuario.intValue()) {
+                response.status(403);
+                return criarRespostaErro(mapper, "Você não tem permissão para visualizar este endpoint");
+            }
+            
+            String nomeAplicacao = aplicacao.getNome();
             String metodoNome = getMetodoNome(endpoint.getMetodo());
             
             EndpointDTO endpointDTO = new EndpointDTO(
@@ -100,14 +131,33 @@ public class EndpointService {
         JsonMapper mapper = JsonMapper.builder().build();
         
         try {
+            // Obter informações do usuário logado através do token de autenticação
+            Integer idUsuario = request.attribute("userId");
+            
+            if (idUsuario == null) {
+                response.status(401);
+                return criarRespostaErro(mapper, "Token de autenticação inválido");
+            }
+            
             int idAplicacao = Integer.parseInt(request.params(":idAplicacao"));
             EndpointDAO endpointDAO = new EndpointDAO();
             AplicacaoDAO aplicacaoDAO = new AplicacaoDAO();
-            List<Endpoint> endpoints = endpointDAO.buscarPorAplicacao(idAplicacao);
-            List<EndpointDTO> endpointsDTO = new ArrayList<>();
             
             Aplicacao aplicacao = aplicacaoDAO.buscarPorId(idAplicacao);
-            String nomeAplicacao = aplicacao != null ? aplicacao.getNome() : "Aplicação não encontrada";
+            if (aplicacao == null) {
+                response.status(404);
+                return criarRespostaErro(mapper, "Aplicação não encontrada");
+            }
+            
+            // Verificar se o usuário tem permissão para visualizar endpoints desta aplicação
+            if (aplicacao.getIdUsuario() != idUsuario.intValue()) {
+                response.status(403);
+                return criarRespostaErro(mapper, "Você não tem permissão para visualizar endpoints desta aplicação");
+            }
+            
+            List<Endpoint> endpoints = endpointDAO.buscarPorAplicacao(idAplicacao);
+            List<EndpointDTO> endpointsDTO = new ArrayList<>();
+            String nomeAplicacao = aplicacao.getNome();
             
             for (Endpoint endpoint : endpoints) {
                 String metodoNome = getMetodoNome(endpoint.getMetodo());
@@ -189,6 +239,14 @@ public class EndpointService {
         JsonMapper mapper = JsonMapper.builder().build();
         
         try {
+            // Obter informações do usuário logado através do token de autenticação
+            Integer idUsuario = request.attribute("userId");
+            
+            if (idUsuario == null) {
+                response.status(401);
+                return criarRespostaErro(mapper, "Token de autenticação inválido");
+            }
+            
             Endpoint endpoint = mapper.readValue(request.body(), new TypeReference<Endpoint>() {});
             
             if (endpoint.getIdAplicacao() <= 0 ||
@@ -203,9 +261,16 @@ public class EndpointService {
             AplicacaoDAO aplicacaoDAO = new AplicacaoDAO();
             
             // Verificar se aplicação existe
-            if (aplicacaoDAO.buscarPorId(endpoint.getIdAplicacao()) == null) {
+            Aplicacao aplicacao = aplicacaoDAO.buscarPorId(endpoint.getIdAplicacao());
+            if (aplicacao == null) {
                 response.status(400);
                 return criarRespostaErro(mapper, "Aplicação não encontrada");
+            }
+            
+            // Verificar se o usuário tem permissão para criar endpoint nesta aplicação
+            if (aplicacao.getIdUsuario() != idUsuario.intValue()) {
+                response.status(403);
+                return criarRespostaErro(mapper, "Você não tem permissão para criar endpoints nesta aplicação");
             }
             
             if (endpointDAO.inserir(endpoint)) {
@@ -230,6 +295,14 @@ public class EndpointService {
         JsonMapper mapper = JsonMapper.builder().build();
         
         try {
+            // Obter informações do usuário logado através do token de autenticação
+            Integer idUsuario = request.attribute("userId");
+            
+            if (idUsuario == null) {
+                response.status(401);
+                return criarRespostaErro(mapper, "Token de autenticação inválido");
+            }
+            
             int id = Integer.parseInt(request.params(":id"));
             Endpoint endpoint = mapper.readValue(request.body(), new TypeReference<Endpoint>() {});
             endpoint.setId(id);
@@ -242,12 +315,30 @@ public class EndpointService {
             }
             
             EndpointDAO endpointDAO = new EndpointDAO();
+            AplicacaoDAO aplicacaoDAO = new AplicacaoDAO();
             
             // Verificar se endpoint existe
-            if (endpointDAO.buscarPorId(id) == null) {
+            Endpoint endpointExistente = endpointDAO.buscarPorId(id);
+            if (endpointExistente == null) {
                 response.status(404);
                 return criarRespostaErro(mapper, "Endpoint não encontrado");
             }
+            
+            // Verificar se a aplicação existe e se o usuário tem permissão
+            Aplicacao aplicacao = aplicacaoDAO.buscarPorId(endpointExistente.getIdAplicacao());
+            if (aplicacao == null) {
+                response.status(404);
+                return criarRespostaErro(mapper, "Aplicação não encontrada");
+            }
+            
+            // Verificar se o usuário tem permissão para atualizar este endpoint
+            if (aplicacao.getIdUsuario() != idUsuario.intValue()) {
+                response.status(403);
+                return criarRespostaErro(mapper, "Você não tem permissão para atualizar este endpoint");
+            }
+            
+            // Manter o ID da aplicação original
+            endpoint.setIdAplicacao(endpointExistente.getIdAplicacao());
             
             if (endpointDAO.atualizar(endpoint)) {
                 return criarRespostaSucesso(mapper, "Endpoint atualizado com sucesso");
@@ -273,12 +364,36 @@ public class EndpointService {
         JsonMapper mapper = JsonMapper.builder().build();
         
         try {
+            // Obter informações do usuário logado através do token de autenticação
+            Integer idUsuario = request.attribute("userId");
+            
+            if (idUsuario == null) {
+                response.status(401);
+                return criarRespostaErro(mapper, "Token de autenticação inválido");
+            }
+            
             int id = Integer.parseInt(request.params(":id"));
             EndpointDAO endpointDAO = new EndpointDAO();
+            AplicacaoDAO aplicacaoDAO = new AplicacaoDAO();
             
-            if (endpointDAO.buscarPorId(id) == null) {
+            // Verificar se endpoint existe
+            Endpoint endpointExistente = endpointDAO.buscarPorId(id);
+            if (endpointExistente == null) {
                 response.status(404);
                 return criarRespostaErro(mapper, "Endpoint não encontrado");
+            }
+            
+            // Verificar se a aplicação existe e se o usuário tem permissão
+            Aplicacao aplicacao = aplicacaoDAO.buscarPorId(endpointExistente.getIdAplicacao());
+            if (aplicacao == null) {
+                response.status(404);
+                return criarRespostaErro(mapper, "Aplicação não encontrada");
+            }
+            
+            // Verificar se o usuário tem permissão para excluir este endpoint
+            if (aplicacao.getIdUsuario() != idUsuario.intValue()) {
+                response.status(403);
+                return criarRespostaErro(mapper, "Você não tem permissão para excluir este endpoint");
             }
             
             if (endpointDAO.excluir(id)) {

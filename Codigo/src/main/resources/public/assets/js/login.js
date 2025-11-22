@@ -1,5 +1,3 @@
-const API_BASE_URL = 'http://localhost:80/api';
-
 // Elementos do DOM
 let loginForm, emailInput, senhaInput, loginBtn, btnText, loadingSpinner, alertContainer;
 
@@ -8,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeElements();
     checkIfLoggedIn();
     setupEventListeners();
-    emailInput.focus();
+    emailInput?.focus();
 });
 
 function initializeElements() {
@@ -22,8 +20,7 @@ function initializeElements() {
 }
 
 function checkIfLoggedIn() {
-    const token = localStorage.getItem('token');
-    if (token) {
+    if (ConfigUtils.isAuthenticated()) {
         // Redirecionar para home se já estiver logado
         window.location.href = '../home/index.html';
     }
@@ -63,7 +60,7 @@ function setLoading(loading) {
 
 async function login(email, senha) {
     try {
-        const response = await fetch(`${API_BASE_URL}/login`, {
+        const response = await fetch(ConfigUtils.getEndpointUrl('LOGIN'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -75,9 +72,9 @@ async function login(email, senha) {
         
         // Verificar tanto 'sucesso' quanto 'success' para compatibilidade
         if (response.ok && (data.sucesso || data.success)) {
-            // Login bem-sucedido
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('usuario', JSON.stringify(data.usuario));
+            // Login bem-sucedido - salvar usando as constantes do config
+            localStorage.setItem(CONFIG.AUTH.TOKEN_KEY, data.token);
+            localStorage.setItem(CONFIG.AUTH.USER_KEY, JSON.stringify(data.usuario));
             
             showAlert('Login realizado com sucesso! Redirecionando...', 'success');
             

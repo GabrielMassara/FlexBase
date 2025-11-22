@@ -1,5 +1,3 @@
-const API_BASE_URL = 'http://localhost:80/api';
-
 // Elementos do DOM
 let cadastroForm, nomeInput, sobrenomeInput, emailInput, senhaInput, confirmarSenhaInput;
 let cadastroBtn, btnText, loadingSpinner, alertContainer, passwordRequirements;
@@ -9,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeElements();
     checkIfLoggedIn();
     setupEventListeners();
-    nomeInput.focus();
+    nomeInput?.focus();
 });
 
 function initializeElements() {
@@ -27,8 +25,7 @@ function initializeElements() {
 }
 
 function checkIfLoggedIn() {
-    const token = localStorage.getItem('token');
-    if (token) {
+    if (ConfigUtils.isAuthenticated()) {
         // Redirecionar para home se já estiver logado
         window.location.href = '../home/index.html';
     }
@@ -119,7 +116,7 @@ function validatePassword() {
 
 async function cadastrar(nome, sobrenome, email, senha) {
     try {
-        const response = await fetch(`${API_BASE_URL}/usuarios`, {
+        const response = await fetch(ConfigUtils.getEndpointUrl('USUARIOS'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

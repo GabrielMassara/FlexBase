@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlexBase - Cadastro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="../../assets/css/auth.css" rel="stylesheet">
+
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <img src="../../assets/img/logo.png" alt="FlexBase Logo">
+                <h1>FlexBase</h1>
+                <p>Crie sua conta e comece agora</p>
+            </div>
+            
+            <div id="alertContainer"></div>
+            
+            <form id="cadastroForm">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="nome" placeholder="Nome" required>
+                            <label for="nome"><i class="bi bi-person me-2"></i>Nome</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="sobrenome" placeholder="Sobrenome" required>
+                            <label for="sobrenome"><i class="bi bi-person me-2"></i>Sobrenome</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-floating">
+                    <input type="email" class="form-control" id="email" placeholder="seu@email.com" required>
+                    <label for="email"><i class="bi bi-envelope me-2"></i>Email</label>
+                </div>
+                
+                <div class="form-floating">
+                    <input type="password" class="form-control" id="senha" placeholder="Senha" required>
+                    <label for="senha"><i class="bi bi-lock me-2"></i>Senha</label>
+                </div>
+                
+                <div class="form-floating">
+                    <input type="password" class="form-control" id="confirmarSenha" placeholder="Confirmar senha" required>
+                    <label for="confirmarSenha"><i class="bi bi-lock me-2"></i>Confirmar Senha</label>
+                </div>
+                
+                <div class="password-requirements" id="passwordRequirements" style="display: none;">
+                    <h6>Requisitos da senha:</h6>
+                    <div class="requirement" id="req-length">
+                        <i class="bi bi-x"></i> Mínimo de 6 caracteres
+                    </div>
+                    <div class="requirement" id="req-match">
+                        <i class="bi bi-x"></i> As senhas devem coincidir
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-auth" id="cadastroBtn">
+                    <span class="btn-text">Criar Conta</span>
+                    <div class="loading-spinner ms-2"></div>
+                </button>
+            </form>
+            
+            <div class="auth-footer">
+                <p class="mb-0 text-white-50">Já tem uma conta?</p>
+                <a href="../login/index.html">Faça login aqui</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../assets/js/cadastro.js"></script>
+</body>
+</html>

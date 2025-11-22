@@ -1,4 +1,4 @@
-# FlexBase
+<img src="Codigo/src/main/resources/public/assets/img/back.png" width="20%">
 
 FlexBase é uma plataforma de **BaaS (Backend as a Service)** que gera **endpoints de API** a partir de um **modelo de diagrama de banco de dados**, tendo **JSON como base de funcionamento**.
 

@@ -88,4 +88,28 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }, 600);
     });
+
+    // Tema da aplicaco
+    const themeToggle = document.getElementById('themeToggle');
+    const html = document.documentElement;
+    // Função para aplicar tema
+    function applyTheme(theme) {
+        html.setAttribute('data-bs-theme', theme);
+        if (themeToggle) {
+            themeToggle.innerHTML = theme === 'dark'
+                ? '<i class="bi bi-sun"></i>'
+                : '<i class="bi bi-moon"></i>';
+        }
+    }
+    // Recupera tema salvo ou padrão
+    let currentTheme = localStorage.getItem('theme') || 'dark';
+    applyTheme(currentTheme);
+    // Alterna tema ao clicar
+    if (themeToggle) {
+        themeToggle.addEventListener('click', function () {
+            currentTheme = (currentTheme === 'dark') ? 'light' : 'dark';
+            localStorage.setItem('theme', currentTheme);
+            applyTheme(currentTheme);
+        });
+    }
 });

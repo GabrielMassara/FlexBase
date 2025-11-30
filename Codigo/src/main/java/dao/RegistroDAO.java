@@ -241,4 +241,20 @@ public class RegistroDAO extends DAO {
             return false;
         }
     }
+    
+    public int contarPorAplicacao(int idAplicacao) {
+        String query = "SELECT COUNT(*) FROM tb_registros WHERE id_aplicacao = ?";
+        try {
+            PreparedStatement stmt = conexao.prepareStatement(query);
+            stmt.setInt(1, idAplicacao);
+            ResultSet rs = stmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
 }

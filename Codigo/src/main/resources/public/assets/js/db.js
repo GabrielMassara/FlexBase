@@ -6,7 +6,9 @@ let state = {
     isDragging: false,
     dragOffset: { x: 0, y: 0 },
     currentEditingTable: null,
-    theme: 'light'
+    theme: 'light',
+    userApplications: [],
+    selectedApplicationId: null
 };
 
 // Dados iniciais vazios - aplicação começa sem tabelas
@@ -20,10 +22,10 @@ let tableModal, relationshipModal;
 // Inicialização
 document.addEventListener('DOMContentLoaded', function() {
     // Aguardar um pouco para garantir que o Bootstrap foi carregado
-    setTimeout(() => {
+    setTimeout(async () => {
         initializeApp();
         setupEventListeners();
-        loadInitialData();
+        await loadInitialData();
     }, 100);
 });
 
@@ -40,9 +42,33 @@ function initializeApp() {
     // Carregar tema salvo
     const savedTheme = localStorage.getItem('flexbase-theme') || 'light';
     setTheme(savedTheme);
+    
+    // Verificar autenticação
+    if (!ConfigUtils.isAuthenticated()) {
+        window.location.href = '../login/index.html';
+        return;
+    }
+    
+    // Carregar aplicações do usuário
+    loadUserApplications();
 }
 
 function setupEventListeners() {
+    // Verificar se veio do dashboard
+    const urlParams = new URLSearchParams(window.location.search);
+    const appId = urlParams.get('app');
+    const backToDashboardBtn = document.getElementById('backToDashboardBtn');
+    
+    if (appId && backToDashboardBtn) {
+        backToDashboardBtn.style.display = 'flex';
+        backToDashboardBtn.addEventListener('click', () => {
+            window.location.href = `../dashboard/index.html?id=${appId}`;
+        });
+        
+        // Se veio com uma aplicação específica, pré-selecionar ela
+        state.selectedApplicationId = parseInt(appId);
+    }
+    
     // Botões principais
     const addTableBtn = document.getElementById('addTableBtn');
     const addRelationshipBtn = document.getElementById('addRelationshipBtn');
@@ -64,6 +90,17 @@ function setupEventListeners() {
     const centerElementsBtn = document.getElementById('centerElementsBtn');
     if (centerElementsBtn) {
         centerElementsBtn.addEventListener('click', centerAllElements);
+    }
+    
+    // Botão para salvar schema
+    const saveSchemaBtn = document.getElementById('saveSchemaBtn');
+    if (saveSchemaBtn) {
+        saveSchemaBtn.addEventListener('click', saveSchemaToDatabase);
+    }
+    
+    const generateEndpointsBtn = document.getElementById('generateEndpointsBtn');
+    if (generateEndpointsBtn) {
+        generateEndpointsBtn.addEventListener('click', generateEndpoints);
     }
 
     // Modal da tabela
@@ -98,6 +135,8 @@ function setupEventListeners() {
         targetTable.addEventListener('change', updateTargetFields);
     }
 
+
+
     // Canvas events
     const canvas = document.getElementById('canvas');
     if (canvas) {
@@ -111,12 +150,27 @@ function setupEventListeners() {
     document.addEventListener('keydown', handleKeyDown);
 }
 
-function loadInitialData() {
-    // Inicializar com estado vazio - sem tabelas por padrão
-    state.tables = [];
+async function loadInitialData() {
+    // Verificar se há uma aplicação específica na URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const appId = urlParams.get('app');
+    
+    if (appId) {
+        // Se há uma aplicação específica, tentar carregar seu schema
+        await loadApplicationSchema(appId);
+    } else {
+        // Inicializar com estado vazio - sem tabelas por padrão
+        state.tables = [];
+    }
 
+    // Renderizar tudo após carregamento
     renderTables();
     renderSidebar();
+    
+    // Aguardar um pouco antes de renderizar relacionamentos
+    setTimeout(() => {
+        renderRelationships();
+    }, 100);
 }
 
 // Funções de Tema
@@ -276,6 +330,8 @@ function addFieldToModal() {
             <option value="number">Number</option>
             <option value="date">Date</option>
             <option value="boolean">Boolean</option>
+            <option value="id">ID</option>
+            <option value="criptografia">Criptografia</option>
         </select>
         <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeField(this)">
             <i class="bi bi-trash"></i>
@@ -309,6 +365,8 @@ function renderModalFields(fields) {
                 <option value="number" ${field.type === 'number' ? 'selected' : ''}>Number</option>
                 <option value="date" ${field.type === 'date' ? 'selected' : ''}>Date</option>
                 <option value="boolean" ${field.type === 'boolean' ? 'selected' : ''}>Boolean</option>
+                <option value="id" ${field.type === 'id' ? 'selected' : ''}>ID</option>
+                <option value="criptografia" ${field.type === 'criptografia' ? 'selected' : ''}>Criptografia</option>
             </select>
             <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeField(this)">
                 <i class="bi bi-trash"></i>
@@ -578,6 +636,8 @@ function createTableElement(table) {
             case 'date': typeIcon = 'bi-calendar-date'; break;
             case 'number': typeIcon = 'bi-hash'; break;
             case 'boolean': typeIcon = 'bi-toggle-on'; break;
+            case 'id': typeIcon = 'bi-key'; break;
+            case 'criptografia': typeIcon = 'bi-shield-lock'; break;
             default: typeIcon = 'bi-question-circle';
         }
 
@@ -945,6 +1005,231 @@ function getRelationshipsForTable(tableId) {
     }));
 }
 
+// Função para mostrar a estrutura JSON do banco de dados
+async function saveSchemaToDatabase() {
+    // Verificar se há uma aplicação selecionada
+    if (!state.selectedApplicationId) {
+        alert('Por favor, selecione uma aplicação antes de salvar o schema.');
+        return;
+    }
+    
+    // Gerar estrutura JSON do esquema no formato correto
+    const schemaStructure = {
+        "nome": "flexbase",
+        "versao": "1.0.0",
+        "tabelas": state.tables.map(table => ({
+            "id": table.id,
+            "nome": table.name,
+            "campos": table.fields.map(field => ({
+                "id": field.id,
+                "nome": field.name,
+                "tipo": field.type,
+                "chave_primaria": field.isPrimary || false,
+                "chave_estrangeira": field.isForeign || false
+            })),
+            "posicao": {
+                "x": Math.round(table.position.x || 0),
+                "y": Math.round(table.position.y || 0)
+            },
+            "relacionamentos": table.relationships.map(rel => ({
+                "tipo": rel.tipo,
+                "campo_local": rel.campoLocal,
+                "tabela_alvo": rel.tabelaAlvo,
+                "campo_alvo": rel.campoAlvo
+            }))
+        })),
+        "criado_em": new Date().toISOString()
+    };
+    
+    try {
+        // Mostrar loading
+        const saveBtn = document.getElementById('saveSchemaBtn');
+        if (saveBtn) {
+            saveBtn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+            saveBtn.disabled = true;
+        }
+        
+        // Primeiro, buscar os dados atuais da aplicação
+        const currentAppResponse = await fetch(`/api/aplicacoes/${state.selectedApplicationId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (!currentAppResponse.ok) {
+            throw new Error(`Erro ao buscar aplicação: ${currentAppResponse.status}`);
+        }
+        
+        const currentApp = await currentAppResponse.json();
+        
+        // Fazer PUT request para atualizar a aplicação com o schema
+        const response = await fetch(`/api/aplicacoes/${state.selectedApplicationId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                nome: currentApp.nome,
+                readme: currentApp.readme,
+                nomeBanco: currentApp.nomeBanco,
+                schemaBanco: schemaStructure  // Enviar como objeto JsonNode diretamente
+            })
+        });
+        
+        if (response.status === 401) {
+            window.location.href = '../login/index.html';
+            return;
+        }
+        
+        if (!response.ok) {
+            throw new Error(`Erro ao salvar: ${response.status}`);
+        }
+        
+        // Sucesso
+        showNotification('Schema salvo com sucesso!', 'success');
+        
+    } catch (error) {
+        showNotification('Erro ao salvar schema. Tente novamente.', 'error');
+    } finally {
+        // Restaurar botão
+        const saveBtn = document.getElementById('saveSchemaBtn');
+        if (saveBtn) {
+            saveBtn.innerHTML = '<i class="bi bi-save"></i>';
+            saveBtn.disabled = false;
+        }
+    }
+}
+
+// Função para carregar aplicações do usuário
+async function loadUserApplications() {
+    try {
+        const response = await fetch('/api/aplicacoes/minhas', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (response.status === 401) {
+            window.location.href = '../login/index.html';
+            return;
+        }
+        
+        if (!response.ok) {
+            throw new Error('Erro ao carregar aplicações');
+        }
+        
+        const applications = await response.json();
+        state.userApplications = Array.isArray(applications) ? applications : [];
+        
+    } catch (error) {
+        state.userApplications = [];
+    }
+}
+
+// Função para mostrar modal de seleção de aplicação
+// Função para gerar endpoints automaticamente
+async function generateEndpoints() {
+    // Verificar se há tabelas criadas
+    if (state.tables.length === 0) {
+        alert('❌ Nenhuma tabela foi criada ainda!\n\nPor favor, crie algumas tabelas antes de gerar os endpoints.');
+        return;
+    }
+    
+    // Verificar se há aplicação selecionada
+    if (state.selectedApplicationId) {
+        executeEndpointGeneration(state.selectedApplicationId);
+        return;
+    }
+    
+    // Se não há aplicação selecionada, mostrar erro
+    showNotification('❌ Erro: Nenhuma aplicação selecionada', 'error');
+}
+
+// Função para executar a geração de endpoints
+async function executeEndpointGeneration(selectedAppId) {
+    // Gerar estrutura JSON do banco de dados
+    const databaseStructure = {
+        "banco": {
+            "nome": "flexbase",
+            "versao": "1.0.0",
+            "criado_em": new Date().toISOString(),
+            "tabelas": state.tables.map(table => ({
+                "nome": table.name,
+                "id": table.id,
+                "campos": table.fields.map(field => ({
+                    "nome": field.name,
+                    "tipo": field.type,
+                    "chave_primaria": field.isPrimary || false,
+                    "chave_estrangeira": field.isForeign || false,
+                    "id": field.id
+                })),
+                "relacionamentos": table.relationships.map(rel => ({
+                    "tipo": rel.tipo,
+                    "campo_local": rel.campoLocal,
+                    "tabela_alvo": rel.tabelaAlvo,
+                    "campo_alvo": rel.campoAlvo
+                })),
+                "posicao": {
+                    "x": Math.round(table.position.x || 0),
+                    "y": Math.round(table.position.y || 0)
+                }
+            }))
+        },
+        "metadados": {
+            "total_tabelas": state.tables.length,
+            "total_campos": state.tables.reduce((sum, table) => sum + (table.fields ? table.fields.length : 0), 0),
+            "total_relacionamentos": state.tables.reduce((sum, table) => sum + (table.relationships ? table.relationships.length : 0), 0),
+            "tema_atual": state.theme
+        }
+    };
+    
+    // Mostrar loading
+    const btn = document.getElementById('generateEndpointsBtn');
+    const originalContent = btn.innerHTML;
+    btn.innerHTML = '<i class="bi bi-gear"></i><span>Gerando...</span>';
+    btn.disabled = true;
+    
+    try {
+        // Fazer requisição para gerar endpoints
+        const response = await fetch(`/api/generateEndpoints/${selectedAppId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify(databaseStructure)
+        });
+        
+        if (response.status === 401) {
+            window.location.href = '../login/index.html';
+            return;
+        }
+        
+        if (!response.ok) {
+            throw new Error(`Erro na requisição: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        // Sucesso
+        showNotification('✅ Endpoints gerados com sucesso!', 'success');
+        
+    } catch (error) {
+        showNotification('❌ Erro ao gerar endpoints. Tente novamente.', 'error');
+    } finally {
+        // Restaurar botão
+        btn.innerHTML = originalContent;
+        btn.disabled = false;
+    }
+}
+
+
+
 // Funções utilitárias
 function findFieldById(fieldId) {
     for (let table of state.tables) {
@@ -954,4 +1239,129 @@ function findFieldById(fieldId) {
         }
     }
     return null;
+}
+
+async function loadApplicationSchema(appId) {
+    try {
+        // Buscar dados da aplicação
+        const response = await fetch(`/api/aplicacoes/${appId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (response.status === 401) {
+            window.location.href = '../login/index.html';
+            return;
+        }
+        
+        if (!response.ok) {
+            state.tables = [];
+            return;
+        }
+        
+        const application = await response.json();
+        
+        // Se a aplicação tem um schema, carregar as tabelas
+        const schemaData = application.schema || application.schemaBanco;
+        if (schemaData) {
+            try {
+                // Se schemaData já é um objeto, usar diretamente, senão parsear
+                const schema = typeof schemaData === 'string' ? JSON.parse(schemaData) : schemaData;
+                
+                // Converter do formato do banco para o formato interno
+                if (schema.tabelas && Array.isArray(schema.tabelas)) {
+                    state.tables = schema.tabelas.map(tabela => {
+                        const convertedTable = {
+                            id: tabela.id,
+                            name: tabela.nome,
+                            fields: tabela.campos ? tabela.campos.map(campo => ({
+                                id: campo.id,
+                                name: campo.nome,
+                                type: campo.tipo,
+                                isPrimary: campo.chave_primaria || false,
+                                isForeign: campo.chave_estrangeira || false
+                            })) : [],
+                            relationships: tabela.relacionamentos ? tabela.relacionamentos.map(rel => ({
+                                tipo: rel.tipo,
+                                campoLocal: rel.campo_local,
+                                tabelaAlvo: rel.tabela_alvo,
+                                campoAlvo: rel.campo_alvo
+                            })) : [],
+                            position: {
+                                x: tabela.posicao ? tabela.posicao.x : 100,
+                                y: tabela.posicao ? tabela.posicao.y : 100
+                            }
+                        };
+                        return convertedTable;
+                    });
+                } else {
+                    state.tables = [];
+                }
+            } catch (parseError) {
+                state.tables = [];
+            }
+        } else {
+            state.tables = [];
+        }
+        
+        // Definir a aplicação atual como selecionada
+        state.selectedApplicationId = parseInt(appId);
+        
+    } catch (error) {
+        state.tables = [];
+    }
+}
+
+function showNotification(message, type = 'info') {
+    // Criar ou reutilizar container de notificação
+    let notification = document.getElementById('notification');
+    if (!notification) {
+        notification = document.createElement('div');
+        notification.id = 'notification';
+        notification.style.cssText = `
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            z-index: 1050;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            min-width: 300px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        `;
+        document.body.appendChild(notification);
+    }
+    
+    // Definir estilo baseado no tipo
+    const styles = {
+        success: 'background: rgba(25, 135, 84, 0.9); border: 1px solid rgba(25, 135, 84, 0.5);',
+        error: 'background: rgba(220, 53, 69, 0.9); border: 1px solid rgba(220, 53, 69, 0.5);',
+        info: 'background: rgba(13, 202, 240, 0.9); border: 1px solid rgba(13, 202, 240, 0.5);'
+    };
+    
+    notification.style.cssText += styles[type] || styles.info;
+    notification.textContent = message;
+    
+    // Mostrar
+    notification.style.transform = 'translateX(0)';
+    notification.style.opacity = '1';
+    
+    // Remover após 3 segundos
+    setTimeout(() => {
+        if (notification) {
+            notification.style.transform = 'translateX(100%)';
+            notification.style.opacity = '0';
+            setTimeout(() => {
+                if (notification && notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }
+    }, 3000);
 }

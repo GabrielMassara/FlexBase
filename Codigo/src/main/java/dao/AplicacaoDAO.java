@@ -2,7 +2,6 @@ package dao;
 
 import model.Aplicacao;
 import filterDTO.AplicacaoFilterDTO;
-import com.fasterxml.jackson.databind.JsonNode;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -17,7 +16,7 @@ public class AplicacaoDAO extends DAO {
     }
 
     public boolean inserir(Aplicacao aplicacao) {
-        String query = "INSERT INTO tb_aplicacao (nome, readme, id_usuario, nome_banco, schema_banco) VALUES (?, ?, ?, ?, ?::jsonb)";
+        String query = "INSERT INTO tb_aplicacao (nome, readme, id_usuario, nome_banco, schema_banco) VALUES (?, ?, ?, ?, ?::jsonb) RETURNING id";
         try {
             PreparedStatement stmt = conexao.prepareStatement(query);
             stmt.setString(1, aplicacao.getNome());
@@ -25,7 +24,13 @@ public class AplicacaoDAO extends DAO {
             stmt.setInt(3, aplicacao.getIdUsuario());
             stmt.setString(4, aplicacao.getNomeBanco());
             stmt.setString(5, aplicacao.getSchemaBanco() != null ? aplicacao.getSchemaBanco().toString() : null);
-            return stmt.executeUpdate() > 0;
+            
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                aplicacao.setId(rs.getInt("id"));
+                return true;
+            }
+            return false;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;

@@ -16,8 +16,11 @@ const CONFIG = {
         USUARIOS: '/usuarios',
         APLICACOES: '/aplicacoes',
         APLICACOES_MINHAS: '/aplicacoes',
+        APLICACOES_ID: '/aplicacoes/{id}',
         ENDPOINTS: '/endpoints',
-        REGISTROS: '/registros'
+        ENDPOINTS_BY_APP: '/endpoints/aplicacao/{id}',
+        REGISTROS: '/registros',
+        REGISTROS_COUNT: '/registros/count'
     },
     
     // Configurações da aplicação

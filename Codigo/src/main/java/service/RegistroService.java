@@ -335,6 +335,60 @@ public class RegistroService {
         }
     }
     
+    public Object contarPorAplicacao(Request request, Response response) {
+        response.type("application/json");
+        JsonMapper mapper = JsonMapper.builder().build();
+        
+        try {
+            // Obter informações do usuário logado através do token de autenticação
+            Integer idUsuario = request.attribute("userId");
+            
+            if (idUsuario == null) {
+                response.status(401);
+                return criarRespostaErro(mapper, "Token de autenticação inválido");
+            }
+            
+            // Obter ID da aplicação via query param ou path param
+            String idAplicacaoStr = request.queryParams("id_aplicacao");
+            if (idAplicacaoStr == null || idAplicacaoStr.isEmpty()) {
+                idAplicacaoStr = request.params(":idAplicacao");
+            }
+            
+            if (idAplicacaoStr == null || idAplicacaoStr.isEmpty()) {
+                response.status(400);
+                return criarRespostaErro(mapper, "ID da aplicação é obrigatório");
+            }
+            
+            int idAplicacao = Integer.parseInt(idAplicacaoStr);
+            
+            // Verificar se a aplicação pertence ao usuário
+            AplicacaoDAO aplicacaoDAO = new AplicacaoDAO();
+            Aplicacao aplicacao = aplicacaoDAO.buscarPorId(idAplicacao);
+            
+            if (aplicacao == null || aplicacao.getIdUsuario() != idUsuario.intValue()) {
+                response.status(403);
+                return criarRespostaErro(mapper, "Acesso negado à aplicação");
+            }
+            
+            // Contar registros
+            RegistroDAO registroDAO = new RegistroDAO();
+            int count = registroDAO.contarPorAplicacao(idAplicacao);
+            
+            Map<String, Object> resposta = new HashMap<>();
+            resposta.put("count", count);
+            resposta.put("aplicacao_id", idAplicacao);
+            
+            return mapper.writeValueAsString(resposta);
+        } catch (NumberFormatException e) {
+            response.status(400);
+            return criarRespostaErro(mapper, "ID de aplicação inválido");
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.status(500);
+            return criarRespostaErro(mapper, "Erro interno do servidor");
+        }
+    }
+    
     private String criarRespostaSucesso(JsonMapper mapper, String mensagem) {
         try {
             Map<String, Object> resposta = new HashMap<>();

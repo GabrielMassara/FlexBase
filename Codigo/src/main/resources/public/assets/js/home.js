@@ -135,11 +135,11 @@ function createProjectCard(project) {
             </div>
             
             <div class="project-actions">
-                <a href="#" class="btn-project-action btn-primary" onclick="viewProject(${project.id})">
-                    <i class="bi bi-eye me-1"></i>Visualizar
+                <a href="../dashboard/index.html?id=${project.id}" class="btn-project-action btn-primary">
+                    <i class="bi bi-speedometer2 me-1"></i>Dashboard
                 </a>
-                <a href="#" class="btn-project-action" onclick="editProject(${project.id})">
-                    <i class="bi bi-pencil me-1"></i>Editar
+                <a href="../db/index.html?app=${project.id}" class="btn-project-action">
+                    <i class="bi bi-diagram-3 me-1"></i>Designer
                 </a>
                 <a href="#" class="btn-project-action" onclick="manageEndpoints(${project.id})">
                     <i class="bi bi-list-ul me-1"></i>APIs
@@ -160,19 +160,7 @@ function handleCreateProject() {
     alert('Funcionalidade de criar projeto em desenvolvimento!');
 }
 
-function viewProject(projectId) {
-    const project = userProjects.find(p => p.id === projectId);
-    if (project) {
-        alert(`Visualizando projeto: ${project.nome}\\nID: ${projectId}`);
-    }
-}
 
-function editProject(projectId) {
-    const project = userProjects.find(p => p.id === projectId);
-    if (project) {
-        alert(`Editando projeto: ${project.nome}\\nID: ${projectId}`);
-    }
-}
 
 function manageEndpoints(projectId) {
     const project = userProjects.find(p => p.id === projectId);

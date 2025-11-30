@@ -7,17 +7,19 @@ import service.UsuarioService;
 import service.AplicacaoService;
 import service.EndpointService;
 import service.RegistroService;
+import service.GeradorEndpointsService;
+import service.EndpointExecutorService;
 import util.AuthFilter;
 
 public class Aplicacao {
 
-	private static ApiService apiService = new ApiService();
+    private static ApiService apiService = new ApiService();
     private static UsuarioService usuarioService = new UsuarioService();
     private static AplicacaoService aplicacaoService = new AplicacaoService();
     private static EndpointService endpointService = new EndpointService();
     private static RegistroService registroService = new RegistroService();
-    
-    public static void main(String[] args) {  
+    private static GeradorEndpointsService geradorEndpointsService = new GeradorEndpointsService();
+    private static EndpointExecutorService endpointExecutorService = new EndpointExecutorService();    public static void main(String[] args) {  
     	System.out.println(" ________ ___       _______      ___    ___ ________  ________  ________  _______      \n"
     			+ "|\\  _____\\\\  \\     |\\  ___ \\    |\\  \\  /  /|\\   __  \\|\\   __  \\|\\   ____\\|\\  ___ \\     \n"
     			+ "\\ \\  \\__/\\ \\  \\    \\ \\   __/|   \\ \\  \\/  / | \\  \\|\\ /\\ \\  \\|\\  \\ \\  \\___|\\ \\   __/|    \n"
@@ -45,8 +47,8 @@ public class Aplicacao {
         
         // FILTRO DE AUTENTICAÇÃO PARA TODAS AS OUTRAS ROTAS /api/*
         // Exceto as rotas públicas já definidas acima
-        before("/api/usuarios", "GET", AuthFilter.authenticate); // Proteger GET de usuários
-        before("/api/usuarios/*", AuthFilter.authenticate); // Proteger rotas específicas de usuário
+        //before("/api/usuarios", "GET", AuthFilter.authenticate); // Proteger GET de usuários
+        //before("/api/usuarios/*", AuthFilter.authenticate); // Proteger rotas específicas de usuário
         before("/api/aplicacoes", AuthFilter.authenticate);
         before("/api/aplicacoes/*", AuthFilter.authenticate);
         before("/api/endpoints", AuthFilter.authenticate);
@@ -63,8 +65,8 @@ public class Aplicacao {
         
         // === ROTAS APLICACOES ===
         get("/api/aplicacoes", (request, response) -> aplicacaoService.listar(request, response));
-        get("/api/aplicacoes/:id", (request, response) -> aplicacaoService.buscarPorId(request, response));
         get("/api/aplicacoes/minhas", (request, response) -> aplicacaoService.buscarPorUsuario(request, response));
+        get("/api/aplicacoes/:id", (request, response) -> aplicacaoService.buscarPorId(request, response));
         post("/api/aplicacoes/buscar", (request, response) -> aplicacaoService.buscarComFiltro(request, response));
         post("/api/aplicacoes", (request, response) -> aplicacaoService.inserir(request, response));
         put("/api/aplicacoes/:id", (request, response) -> aplicacaoService.atualizar(request, response));
@@ -81,6 +83,7 @@ public class Aplicacao {
         
         // === ROTAS REGISTROS ===
         get("/api/registros", (request, response) -> registroService.listar(request, response));
+        get("/api/registros/count", (request, response) -> registroService.contarPorAplicacao(request, response));
         get("/api/registros/:id", (request, response) -> registroService.buscarPorId(request, response));
         get("/api/registros/aplicacao/:idAplicacao", (request, response) -> registroService.buscarPorAplicacao(request, response));
         get("/api/registros/tabela/:tabela", (request, response) -> registroService.buscarPorTabela(request, response));
@@ -88,6 +91,17 @@ public class Aplicacao {
         post("/api/registros", (request, response) -> registroService.inserir(request, response));
         put("/api/registros/:id", (request, response) -> registroService.atualizar(request, response));
         delete("/api/registros/:id", (request, response) -> registroService.excluir(request, response));
+        
+        // === ROTA PARA GERAR OS ENDPOINTS ===
+        before("/api/generateEndpoints/:idAplicacao", AuthFilter.authenticate);
+        post("/api/generateEndpoints/:idAplicacao", (request, response) -> geradorEndpointsService.generateEndpoints(request, response));
+        
+        // === ROTAS GENÉRICAS PARA EXECUTAR ENDPOINTS DINÂMICOS ===
+        before("/api/endpoints/:idAplicacao/*", AuthFilter.authenticate);
+        get("/api/endpoints/:idAplicacao/*", (request, response) -> endpointExecutorService.executeEndpoint(request, response));
+        post("/api/endpoints/:idAplicacao/*", (request, response) -> endpointExecutorService.executeEndpoint(request, response));
+        put("/api/endpoints/:idAplicacao/*", (request, response) -> endpointExecutorService.executeEndpoint(request, response));
+        delete("/api/endpoints/:idAplicacao/*", (request, response) -> endpointExecutorService.executeEndpoint(request, response));
         
         // === ROTA OPTIONS PARA CORS ===
         options("/*", (request, response) -> {

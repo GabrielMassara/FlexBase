@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlexBase - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/db.css">
+    <link rel="stylesheet" href="../../assets/css/dashboard.css">
+</head>
+<body>
+    <!-- Floating Glass Navbar -->
+    <nav class="floating-navbar">
+        <div class="navbar-content">
+            <div class="navbar-brand">
+                <h1 class="logo"><img src="../../assets/img/logo.png" alt="FlexBase" width="30px"></h1>
+            </div>
+            <div class="navbar-actions">
+                <button class="btn-glass btn-secondary">
+                    <i class="bi bi-house"></i>
+                    <span>Homepage</span>
+                </button>
+                <button class="btn-glass btn-secondary">
+                    <i class="bi bi-credit-card"></i>
+                    <span>Planos</span>
+                </button>
+                <button class="btn-glass btn-secondary">
+                    <i class="bi bi-person-circle"></i>
+                    <span>Meu Perfil</span>
+                </button>
+                <button id="themeToggle" class="btn-glass btn-theme">
+                    <i class="bi bi-sun"></i>
+                </button>
+                <button id="logoutBtn" class="btn-glass" style="background: rgba(220, 53, 69, 0.2); color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.3);">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-container" style="height: 100vh;">
+        <!-- Fundo com grade pontilhada -->
+        <div class="canvas-grid"></div>
+        
+        <div class="main-content">
+            <div class="container-fluid">
+                <!-- Cabeçalho da página -->
+                <div class="page-header">
+                    <h1 class="page-title">Dashboard de Controle</h1>
+                    <p class="page-subtitle">Gerencie todos os aspectos da sua aplicação</p>
+                </div>
+
+                <!-- Seção de Estatísticas -->
+                <div class="stats-section">
+                    <h2 class="section-title">Visão Geral</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">Aplicações</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">Endpoints</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">0</div>
+                            <div class="stat-label">Tabelas</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">1</div>
+                            <div class="stat-label">Usuários Ativos</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção de Ações Rápidas -->
+                <div class="quick-actions-section">
+                    <h2 class="section-title">Módulos de Gerenciamento</h2>
+                    <div class="actions-grid">
+                        <!-- Card Gerenciar API -->
+                        <div class="action-card api-card disabled">
+                            <div class="action-card-status status-coming-soon">Em Breve</div>
+                            <div class="action-card-icon">
+                                <i class="bi bi-cloud-arrow-up"></i>
+                            </div>
+                            <h3 class="action-card-title">Gerenciar APIs</h3>
+                            <p class="action-card-description">
+                                Configure e monitore suas APIs, defina endpoints personalizados e gerencie as integrações do sistema.
+                            </p>
+                        </div>
+
+                        <!-- Card Gerenciar Diagrama -->
+                        <div class="action-card diagram-card">
+                            <div class="action-card-status status-available">Disponível</div>
+                            <div class="action-card-icon">
+                                <i class="bi bi-diagram-3"></i>
+                            </div>
+                            <h3 class="action-card-title">Gerenciar Diagrama</h3>
+                            <p class="action-card-description">
+                                Crie e edite diagramas de banco de dados, defina relacionamentos e visualize a estrutura dos dados.
+                            </p>
+                        </div>
+
+                        <!-- Card Banco de Dados -->
+                        <div class="action-card database-card disabled">
+                            <div class="action-card-status status-coming-soon">Em Breve</div>
+                            <div class="action-card-icon">
+                                <i class="bi bi-server"></i>
+                            </div>
+                            <h3 class="action-card-title">Banco de Dados</h3>
+                            <p class="action-card-description">
+                                Gerencie conexões, execute consultas e monitore o desempenho do banco de dados em tempo real.
+                            </p>
+                        </div>
+
+                        <!-- Card Gerenciar Keys -->
+                        <div class="action-card keys-card disabled">
+                            <div class="action-card-status status-coming-soon">Em Breve</div>
+                            <div class="action-card-icon">
+                                <i class="bi bi-key"></i>
+                            </div>
+                            <h3 class="action-card-title">Gerenciar Keys</h3>
+                            <p class="action-card-description">
+                                Configure chaves de API, tokens de acesso e gerencie a autenticação e autorização do sistema.
+                            </p>
+                        </div>
+
+                        <!-- Card Gerenciar Usuários -->
+                        <div class="action-card users-card disabled">
+                            <div class="action-card-status status-coming-soon">Em Breve</div>
+                            <div class="action-card-icon">
+                                <i class="bi bi-people"></i>
+                            </div>
+                            <h3 class="action-card-title">Gerenciar Usuários</h3>
+                            <p class="action-card-description">
+                                Administre contas de usuário, defina permissões e monitore atividades no sistema.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Container para notificações toast -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1200;"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../assets/js/config.js"></script>
+    <script src="../../assets/js/dashboard.js"></script>
+</body>
+</html>

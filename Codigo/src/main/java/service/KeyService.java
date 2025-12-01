@@ -360,4 +360,54 @@ public class KeyService {
             return "{\"success\": true, \"message\": \"Operação realizada\"}";
         }
     }
+    
+    public Object listarEndpointsAssociados(Request request, Response response) {
+        response.type("application/json");
+        JsonMapper mapper = JsonMapper.builder().build();
+        
+        try {
+            // Obter informações do usuário logado através do token de autenticação
+            Integer idUsuario = request.attribute("userId");
+            
+            if (idUsuario == null) {
+                response.status(401);
+                return criarRespostaErro(mapper, "Token de autenticação inválido");
+            }
+            
+            int idKey = Integer.parseInt(request.params(":id"));
+            KeyDAO keyDAO = new KeyDAO();
+            AplicacaoDAO aplicacaoDAO = new AplicacaoDAO();
+            
+            // Verificar se key existe
+            Key key = keyDAO.buscarPorId(idKey);
+            if (key == null) {
+                response.status(404);
+                return criarRespostaErro(mapper, "Key não encontrada");
+            }
+            
+            // Verificar se o usuário tem permissão para visualizar esta key
+            Aplicacao aplicacao = aplicacaoDAO.buscarPorId(key.getIdAplicacao());
+            if (aplicacao == null || aplicacao.getIdUsuario() != idUsuario.intValue()) {
+                response.status(403);
+                return criarRespostaErro(mapper, "Você não tem permissão para visualizar os endpoints desta key");
+            }
+            
+            List<Integer> endpointsIds = keyDAO.buscarEndpointsAssociados(idKey);
+            
+            Map<String, Object> resposta = new HashMap<>();
+            resposta.put("success", true);
+            resposta.put("keyId", idKey);
+            resposta.put("keyNome", key.getNome());
+            resposta.put("endpointsAssociados", endpointsIds);
+            
+            return mapper.writeValueAsString(resposta);
+        } catch (NumberFormatException e) {
+            response.status(400);
+            return criarRespostaErro(mapper, "ID da key inválido");
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.status(500);
+            return criarRespostaErro(mapper, "Erro interno do servidor");
+        }
+    }
 }

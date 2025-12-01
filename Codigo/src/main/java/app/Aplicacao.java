@@ -11,6 +11,7 @@ import service.GeradorEndpointsService;
 import service.EndpointExecutorService;
 import service.KeyService;
 import service.CadastroAplicacaoService;
+import service.AppTokenService;
 import util.AuthFilter;
 
 public class Aplicacao {
@@ -22,7 +23,10 @@ public class Aplicacao {
     private static RegistroService registroService = new RegistroService();
     private static GeradorEndpointsService geradorEndpointsService = new GeradorEndpointsService();
     private static EndpointExecutorService endpointExecutorService = new EndpointExecutorService();
-    private static KeyService keyService = new KeyService();    public static void main(String[] args) {  
+    private static KeyService keyService = new KeyService();
+    private static AppTokenService appTokenService = new AppTokenService();
+    
+    public static void main(String[] args) {  
     	System.out.println(" ________ ___       _______      ___    ___ ________  ________  ________  _______      \n"
     			+ "|\\  _____\\\\  \\     |\\  ___ \\    |\\  \\  /  /|\\   __  \\|\\   __  \\|\\   ____\\|\\  ___ \\     \n"
     			+ "\\ \\  \\__/\\ \\  \\    \\ \\   __/|   \\ \\  \\/  / | \\  \\|\\ /\\ \\  \\|\\  \\ \\  \\___|\\ \\   __/|    \n"
@@ -47,6 +51,11 @@ public class Aplicacao {
         post("/api/entrar", (request, response) -> apiService.entrar(request, response));
         post("/api/login", (request, response) -> usuarioService.login(request, response));
         post("/api/usuarios", (request, response) -> usuarioService.inserir(request, response)); // Cadastro público
+        
+        // === ROTAS PARA TOKENS DE APLICAÇÃO (PÚBLICAS) ===
+        post("/api/app-token/gerar", (request, response) -> appTokenService.gerarToken(request, response));
+        post("/api/app-token/validar", (request, response) -> appTokenService.validarToken(request, response));
+        post("/api/token/detectar-tipo", (request, response) -> appTokenService.detectarTipoToken(request, response));
         
         // FILTRO DE AUTENTICAÇÃO PARA TODAS AS OUTRAS ROTAS /api/*
         // Exceto as rotas públicas já definidas acima
@@ -100,6 +109,7 @@ public class Aplicacao {
         // === ROTAS KEYS ===
         get("/api/keys/aplicacao/:idAplicacao", (request, response) -> keyService.listarPorAplicacao(request, response));
         get("/api/keys/:id", (request, response) -> keyService.buscarPorId(request, response));
+        get("/api/keys/:id/endpoints", (request, response) -> keyService.listarEndpointsAssociados(request, response));
         post("/api/keys", (request, response) -> keyService.inserir(request, response));
         put("/api/keys/:id", (request, response) -> keyService.atualizar(request, response));
         delete("/api/keys/:id", (request, response) -> keyService.excluir(request, response));
@@ -116,7 +126,8 @@ public class Aplicacao {
         post("/api/generateEndpoints/:idAplicacao", (request, response) -> geradorEndpointsService.generateEndpoints(request, response));
         
         // === ROTAS GENÉRICAS PARA EXECUTAR ENDPOINTS DINÂMICOS ===
-        before("/api/endpoints/:idAplicacao/*", AuthFilter.authenticate);
+        // USAR AUTENTICAÇÃO POR TOKEN DE APLICAÇÃO AO INVÉS DO TOKEN DE USUÁRIO
+        before("/api/endpoints/:idAplicacao/*", AuthFilter.authenticateAppToken);
         get("/api/endpoints/:idAplicacao/*", (request, response) -> endpointExecutorService.executeEndpoint(request, response));
         post("/api/endpoints/:idAplicacao/*", (request, response) -> endpointExecutorService.executeEndpoint(request, response));
         put("/api/endpoints/:idAplicacao/*", (request, response) -> endpointExecutorService.executeEndpoint(request, response));

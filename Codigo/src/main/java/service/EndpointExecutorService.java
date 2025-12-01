@@ -4,9 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 
-import dao.AplicacaoDAO;
 import dao.EndpointDAO;
-import model.Aplicacao;
 import model.Endpoint;
 import spark.Request;
 import spark.Response;
@@ -29,22 +27,8 @@ public class EndpointExecutorService {
         JsonMapper mapper = JsonMapper.builder().build();
         
         try {
-            // Obter informações do usuário logado através do token de autenticação
-            Integer idUsuario = request.attribute("userId");
-            
-            if (idUsuario == null) {
-                response.status(401);
-                return criarRespostaErro(mapper, "Token de autenticação inválido");
-            }
-            
-            // Obter parâmetros da rota
-            int idAplicacao;
-            try {
-                idAplicacao = Integer.parseInt(request.params(":idAplicacao"));
-            } catch (NumberFormatException e) {
-                response.status(400);
-                return criarRespostaErro(mapper, "ID da aplicação inválido");
-            }
+            // Obter informações já validadas pelo filtro de autenticação
+            Integer idAplicacao = request.attribute("idAplicacao");
             
             // Extrair a rota do splat parameter
             String rotaEndpoint = request.splat()[0];
@@ -58,21 +42,7 @@ public class EndpointExecutorService {
                 rotaEndpoint = "/" + rotaEndpoint;
             }
             
-            // Verificar se a aplicação existe e pertence ao usuário
-            AplicacaoDAO aplicacaoDAO = new AplicacaoDAO();
-            Aplicacao aplicacao = aplicacaoDAO.buscarPorId(idAplicacao);
-            
-            if (aplicacao == null) {
-                response.status(404);
-                return criarRespostaErro(mapper, "Aplicação não encontrada");
-            }
-            
-            if (aplicacao.getIdUsuario() != idUsuario.intValue()) {
-                response.status(403);
-                return criarRespostaErro(mapper, "Você não tem permissão para acessar esta aplicação");
-            }
-            
-            // Buscar endpoint correspondente
+            // Buscar endpoint correspondente (validação já foi feita no filtro)
             EndpointDAO endpointDAO = new EndpointDAO();
             List<Endpoint> endpoints = endpointDAO.buscarPorAplicacao(idAplicacao);
             

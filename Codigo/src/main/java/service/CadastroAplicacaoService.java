@@ -147,7 +147,8 @@ public class CadastroAplicacaoService {
             }
 
             String token = authHeader.substring(7);
-            if (JwtUtil.validateToken(token) == null) {
+            // Tentar validar como token de usuário normal primeiro, depois como token de usuário de aplicação
+            if (JwtUtil.validateToken(token) == null && JwtUtil.validateAppUserToken(token) == null) {
                 response.status(401);
                 return "{\"success\": false, \"message\": \"Token inválido\"}";
             }
@@ -292,15 +293,16 @@ public class CadastroAplicacaoService {
             long expirationTime = currentTimeMillis + (24 * 60 * 60 * 1000); // 24 horas
             
             return com.auth0.jwt.JWT.create()
-                    .withIssuer("flexbase")
+                    .withIssuer("naviapi")  // Usar o mesmo issuer do JwtUtil
                     .withSubject(idUsuarioAplicacao.toString())
                     .withClaim("nome_usuario", nomeUsuario)
                     .withClaim("email_usuario", emailUsuario)
                     .withClaim("key_acesso", keyAcesso)
                     .withClaim("dados_usuario", dadosUsuario != null ? dadosUsuario.toString() : null)
+                    .withClaim("type", "app_user_token") // Identificador para diferenciar do token de aplicação
                     .withExpiresAt(new java.util.Date(expirationTime))
                     .withIssuedAt(new java.util.Date(currentTimeMillis))
-                    .sign(com.auth0.jwt.algorithms.Algorithm.HMAC256("flexbase-app-secret-2025"));
+                    .sign(com.auth0.jwt.algorithms.Algorithm.HMAC256("naviapi-secret-key-2025")); // Usar a mesma chave do JwtUtil
                     
         } catch (Exception e) {
             e.printStackTrace();

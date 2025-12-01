@@ -4,6 +4,8 @@ public class ApiFilterDTO {
 	private String email;
 	private String senha;
 	private String token;
+	private String codigoKey;
+	private Integer idUsuario;
 	
 	
 	public String getEmail() {
@@ -23,5 +25,17 @@ public class ApiFilterDTO {
 	}
 	public void setToken(String token) {
 		this.token = token;
+	}
+	public String getCodigoKey() {
+		return codigoKey;
+	}
+	public void setCodigoKey(String codigoKey) {
+		this.codigoKey = codigoKey;
+	}
+	public Integer getIdUsuario() {
+		return idUsuario;
+	}
+	public void setIdUsuario(Integer idUsuario) {
+		this.idUsuario = idUsuario;
 	}
 }

@@ -17,7 +17,7 @@
                 <h1 class="logo"><img src="../../assets/img/logo.png" alt="FlexBase" width="30px"></h1>
             </div>
             <div class="navbar-actions">
-                <button class="btn-glass btn-secondary" onclick="window.location.href='../dashboard/'">
+                <button class="btn-glass btn-secondary" onclick="voltarParaDashboard()">
                     <i class="bi bi-arrow-left"></i>
                     <span>Voltar</span>
                 </button>
@@ -599,6 +599,14 @@
             
             const icon = document.querySelector('#themeToggle i');
             icon.className = newTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon';
+        }
+
+        function voltarParaDashboard() {
+            if (idAplicacao) {
+                window.location.href = `../dashboard/?id=${idAplicacao}`;
+            } else {
+                window.location.href = '../dashboard/';
+            }
         }
 
         function logout() {

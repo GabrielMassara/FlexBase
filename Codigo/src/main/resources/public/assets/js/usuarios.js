@@ -649,6 +649,15 @@ function formatarData(dataString) {
     }
 }
 
+// Função para voltar ao dashboard com ID da aplicação
+function voltarParaDashboard() {
+    if (aplicacaoSelecionada) {
+        window.location.href = `../dashboard/?id=${aplicacaoSelecionada}`;
+    } else {
+        window.location.href = '../dashboard/';
+    }
+}
+
 // Mostrar toast de notificação
 function mostrarToast(mensagem, tipo = 'info') {
     const toastContainer = document.querySelector('.toast-container');

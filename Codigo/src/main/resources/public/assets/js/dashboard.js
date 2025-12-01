@@ -145,6 +145,19 @@ function abrirGerenciamentoUsuarios() {
     window.location.href = `../usuarios/index.html?id=${appId}`;
 }
 
+function abrirGerenciamentoAPI() {
+    // Obter ID da aplicação da URL
+    const appId = getApplicationIdFromUrl();
+    
+    if (!appId) {
+        showNotification('ID da aplicação não encontrado.', 'error');
+        return;
+    }
+    
+    // Redirecionar para o gerenciamento de API
+    window.location.href = `../api/index.html?id=${appId}`;
+}
+
 function setupDisabledCards() {
     const disabledCards = document.querySelectorAll('.action-card.disabled');
     

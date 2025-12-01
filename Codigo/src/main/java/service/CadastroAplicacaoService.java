@@ -3,9 +3,11 @@ package service;
 import dao.UsuarioDAO;
 import dao.AplicacaoDAO;
 import dao.UsuarioAplicacaoDAO;
+import dao.KeyDAO;
 import model.Usuario;
 import model.Aplicacao;
 import model.UsuarioAplicacao;
+import model.Key;
 import responseDTO.UsuarioAplicacaoDTO;
 import util.JwtUtil;
 import spark.Request;
@@ -257,12 +259,20 @@ public class CadastroAplicacaoService {
                 return "{\"success\": false, \"message\": \"Conta de usuário desativada nesta aplicação\"}";
             }
 
-            // 3. Gerar token JWT com dados específicos da aplicação
+            // 3. Buscar a key específica do usuário
+            KeyDAO keyDAO = new KeyDAO();
+            Key keyUsuario = keyDAO.buscarPorId(usuarioAplicacao.getIdKey());
+            if (keyUsuario == null || !keyUsuario.isAtivo()) {
+                response.status(403);
+                return "{\"success\": false, \"message\": \"Key de acesso do usuário inválida ou inativa\"}";
+            }
+
+            // 4. Gerar token JWT com dados específicos da aplicação e key do usuário
             String token = gerarTokenAplicacao(
                 usuarioAplicacao.getId(),
                 usuario.getNome() + " " + usuario.getSobrenome(),
                 usuario.getEmail(),
-                aplicacao.getCodigoKeyBase(),
+                keyUsuario.getCodigo(),
                 usuarioAplicacao.getDadosUsuario()
             );
 
@@ -271,12 +281,12 @@ public class CadastroAplicacaoService {
                 return "{\"success\": false, \"message\": \"Erro ao gerar token de acesso\"}";
             }
 
-            // 4. Preparar resposta de sucesso
+            // 6. Preparar resposta de sucesso
             Map<String, Object> userData = new java.util.HashMap<>();
             userData.put("id_usuario_aplicacao", usuarioAplicacao.getId());
             userData.put("nome_usuario", usuario.getNome() + " " + usuario.getSobrenome());
             userData.put("email_usuario", usuario.getEmail());
-            userData.put("key_acesso", aplicacao.getCodigoKeyBase());
+            userData.put("key_acesso", keyUsuario.getCodigo());
             userData.put("dados_usuario", usuarioAplicacao.getDadosUsuario());
             userData.put("nome_aplicacao", aplicacao.getNome());
             userData.put("data_vinculo", usuarioAplicacao.getDataVinculo());

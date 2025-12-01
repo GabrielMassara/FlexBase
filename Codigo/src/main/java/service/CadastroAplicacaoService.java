@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Map;
 import java.util.List;
+import java.util.Date;
 
 public class CadastroAplicacaoService {
     private UsuarioDAO usuarioDAO = new UsuarioDAO();
@@ -179,6 +180,131 @@ public class CadastroAplicacaoService {
             e.printStackTrace();
             response.status(500);
             return "{\"success\": false, \"message\": \"Erro interno do servidor\"}";
+        }
+    }
+
+    public Object loginNaAplicacao(Request request, Response response) {
+        try {
+            // Extrair ID da aplicação da URL
+            String idAplicacaoStr = request.params(":idAplicacao");
+            if (idAplicacaoStr == null || idAplicacaoStr.trim().isEmpty()) {
+                response.status(400);
+                return "{\"success\": false, \"message\": \"ID da aplicação é obrigatório\"}";
+            }
+
+            Integer idAplicacao;
+            try {
+                idAplicacao = Integer.parseInt(idAplicacaoStr);
+            } catch (NumberFormatException e) {
+                response.status(400);
+                return "{\"success\": false, \"message\": \"ID da aplicação inválido\"}";
+            }
+
+            // Verificar se a aplicação existe
+            Aplicacao aplicacao = aplicacaoDAO.buscarPorId(idAplicacao);
+            if (aplicacao == null) {
+                response.status(404);
+                return "{\"success\": false, \"message\": \"Aplicação não encontrada\"}";
+            }
+
+            // Parse do body da requisição
+            @SuppressWarnings("unchecked")
+            Map<String, Object> requestBody = objectMapper.readValue(request.body(), Map.class);
+            
+            String email = (String) requestBody.get("email");
+            String senha = (String) requestBody.get("senha");
+
+            if (email == null || email.trim().isEmpty() || senha == null || senha.trim().isEmpty()) {
+                response.status(400);
+                return "{\"success\": false, \"message\": \"Email e senha são obrigatórios\"}";
+            }
+
+            // 1. Fazer login na FlexBase (tb_usuarios)
+            Usuario usuario = usuarioDAO.buscarPorEmail(email);
+            if (usuario == null) {
+                response.status(401);
+                return "{\"success\": false, \"message\": \"Credenciais inválidas\"}";
+            }
+
+            // Verificar senha
+            if (!verificarSenha(senha, usuario.getSenha())) {
+                response.status(401);
+                return "{\"success\": false, \"message\": \"Credenciais inválidas\"}";
+            }
+
+            // 2. Verificar se usuário possui conta na aplicação
+            UsuarioAplicacao usuarioAplicacao = usuarioAplicacaoDAO.buscarPorUsuarioEAplicacao(usuario.getId(), idAplicacao);
+            if (usuarioAplicacao == null) {
+                response.status(403);
+                return "{\"success\": false, \"message\": \"Usuário não possui acesso a esta aplicação\"}";
+            }
+
+            if (!usuarioAplicacao.getAtivo()) {
+                response.status(403);
+                return "{\"success\": false, \"message\": \"Conta de usuário desativada nesta aplicação\"}";
+            }
+
+            // 3. Gerar token JWT com dados específicos da aplicação
+            String token = gerarTokenAplicacao(
+                usuarioAplicacao.getId(),
+                usuario.getNome() + " " + usuario.getSobrenome(),
+                usuario.getEmail(),
+                aplicacao.getCodigoKeyBase(),
+                usuarioAplicacao.getDadosUsuario()
+            );
+
+            if (token == null) {
+                response.status(500);
+                return "{\"success\": false, \"message\": \"Erro ao gerar token de acesso\"}";
+            }
+
+            // 4. Preparar resposta de sucesso
+            Map<String, Object> userData = new java.util.HashMap<>();
+            userData.put("id_usuario_aplicacao", usuarioAplicacao.getId());
+            userData.put("nome_usuario", usuario.getNome() + " " + usuario.getSobrenome());
+            userData.put("email_usuario", usuario.getEmail());
+            userData.put("key_acesso", aplicacao.getCodigoKeyBase());
+            userData.put("dados_usuario", usuarioAplicacao.getDadosUsuario());
+            userData.put("nome_aplicacao", aplicacao.getNome());
+            userData.put("data_vinculo", usuarioAplicacao.getDataVinculo());
+
+            Map<String, Object> responseMap = new java.util.HashMap<>();
+            responseMap.put("success", true);
+            responseMap.put("message", "Login realizado com sucesso");
+            responseMap.put("token", token);
+            responseMap.put("user", userData);
+
+            response.status(200);
+            return objectMapper.writeValueAsString(responseMap);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.status(500);
+            return "{\"success\": false, \"message\": \"Erro interno do servidor\"}";
+        }
+    }
+
+    private String gerarTokenAplicacao(Integer idUsuarioAplicacao, String nomeUsuario, 
+                                     String emailUsuario, String keyAcesso, 
+                                     JsonNode dadosUsuario) {
+        try {
+            long currentTimeMillis = System.currentTimeMillis();
+            long expirationTime = currentTimeMillis + (24 * 60 * 60 * 1000); // 24 horas
+            
+            return com.auth0.jwt.JWT.create()
+                    .withIssuer("flexbase")
+                    .withSubject(idUsuarioAplicacao.toString())
+                    .withClaim("nome_usuario", nomeUsuario)
+                    .withClaim("email_usuario", emailUsuario)
+                    .withClaim("key_acesso", keyAcesso)
+                    .withClaim("dados_usuario", dadosUsuario != null ? dadosUsuario.toString() : null)
+                    .withExpiresAt(new java.util.Date(expirationTime))
+                    .withIssuedAt(new java.util.Date(currentTimeMillis))
+                    .sign(com.auth0.jwt.algorithms.Algorithm.HMAC256("flexbase-app-secret-2025"));
+                    
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 

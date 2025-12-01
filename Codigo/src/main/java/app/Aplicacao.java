@@ -108,6 +108,7 @@ public class Aplicacao {
         CadastroAplicacaoService cadastroService = new CadastroAplicacaoService();
         
         post("/api/cadastro/:idAplicacao", (request, response) -> cadastroService.cadastrarUsuarioNaAplicacao(request, response));
+        post("/api/login/:idAplicacao", (request, response) -> cadastroService.loginNaAplicacao(request, response));
         get("/api/aplicacao/:idAplicacao/usuarios", (request, response) -> cadastroService.listarUsuariosDaAplicacao(request, response));
         
         // === ROTA PARA GERAR OS ENDPOINTS ===

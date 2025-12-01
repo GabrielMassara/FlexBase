@@ -132,6 +132,19 @@ function navigateToDatabase() {
     window.location.href = `../database/index.html?id=${appId}`;
 }
 
+function abrirGerenciamentoUsuarios() {
+    // Obter ID da aplicação da URL
+    const appId = getApplicationIdFromUrl();
+    
+    if (!appId) {
+        showNotification('ID da aplicação não encontrado.', 'error');
+        return;
+    }
+    
+    // Redirecionar para o gerenciamento de usuários
+    window.location.href = `../usuarios/index.html?id=${appId}`;
+}
+
 function setupDisabledCards() {
     const disabledCards = document.querySelectorAll('.action-card.disabled');
     
@@ -363,6 +376,17 @@ function updateDashboardWithAppInfo(app) {
     }
     
     console.log('Dashboard atualizado com informações da aplicação:', app);
+}
+
+// Função para abrir gerenciamento de usuários
+function abrirGerenciamentoUsuarios() {
+    const appId = getApplicationIdFromUrl();
+    if (!appId) {
+        showToast('Nenhuma aplicação selecionada', 'error');
+        return;
+    }
+    
+    window.location.href = `../usuarios/index.html?id=${appId}`;
 }
 
 // Atualizar dados periodicamente (opcional)

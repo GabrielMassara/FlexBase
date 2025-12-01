@@ -106,6 +106,27 @@ public class UsuarioAplicacaoDAO extends DAO {
         
         return lista;
     }
+    
+    public List<UsuarioAplicacao> listarTodosPorAplicacao(Integer idAplicacao) {
+        String sql = "SELECT * FROM tb_usuario_aplicacao WHERE id_aplicacao = ?";
+        List<UsuarioAplicacao> lista = new ArrayList<>();
+        
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            
+            stmt.setInt(1, idAplicacao);
+            
+            ResultSet rs = stmt.executeQuery();
+            
+            while (rs.next()) {
+                lista.add(mapResultSetToUsuarioAplicacao(rs));
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        return lista;
+    }
 
     public boolean atualizarDados(Integer id, JsonNode dadosUsuario) {
         String sql = "UPDATE tb_usuario_aplicacao SET dados_usuario = ?::jsonb WHERE id = ?";
@@ -142,6 +163,60 @@ public class UsuarioAplicacaoDAO extends DAO {
         }
         
         return false;
+    }
+    
+    public boolean alterarKey(Integer id, Integer novaIdKey) {
+        String sql = "UPDATE tb_usuario_aplicacao SET id_key = ? WHERE id = ?";
+        
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            
+            stmt.setInt(1, novaIdKey);
+            stmt.setInt(2, id);
+            
+            return stmt.executeUpdate() > 0;
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        return false;
+    }
+    
+    public boolean alterarStatus(Integer id, boolean ativo) {
+        String sql = "UPDATE tb_usuario_aplicacao SET ativo = ? WHERE id = ?";
+        
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            
+            stmt.setBoolean(1, ativo);
+            stmt.setInt(2, id);
+            
+            return stmt.executeUpdate() > 0;
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        return false;
+    }
+    
+    public UsuarioAplicacao buscarPorId(Integer id) {
+        String sql = "SELECT * FROM tb_usuario_aplicacao WHERE id = ?";
+        
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            
+            stmt.setInt(1, id);
+            
+            ResultSet rs = stmt.executeQuery();
+            
+            if (rs.next()) {
+                return mapResultSetToUsuarioAplicacao(rs);
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        return null;
     }
 
     private UsuarioAplicacao mapResultSetToUsuarioAplicacao(ResultSet rs) throws Exception {

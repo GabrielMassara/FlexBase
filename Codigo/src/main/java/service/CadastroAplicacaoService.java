@@ -14,7 +14,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Map;
 import java.util.List;
-import java.util.Date;
+import java.util.ArrayList;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
 public class CadastroAplicacaoService {
     private UsuarioDAO usuarioDAO = new UsuarioDAO();
@@ -147,10 +149,13 @@ public class CadastroAplicacaoService {
             }
 
             String token = authHeader.substring(7);
-            // Tentar validar como token de usuário normal primeiro, depois como token de usuário de aplicação
-            if (JwtUtil.validateToken(token) == null && JwtUtil.validateAppUserToken(token) == null) {
-                response.status(401);
-                return "{\"success\": false, \"message\": \"Token inválido\"}";
+            int idUsuarioLogado = JwtUtil.getUserIdFromToken(token);
+            if (idUsuarioLogado == -1) {
+                // Tentar validar como token de usuário de aplicação
+                if (JwtUtil.validateAppUserToken(token) == null) {
+                    response.status(401);
+                    return "{\"success\": false, \"message\": \"Token inválido\"}";
+                }
             }
 
             String idAplicacaoStr = request.params(":idAplicacao");
@@ -168,8 +173,15 @@ public class CadastroAplicacaoService {
                 return "{\"success\": false, \"message\": \"Aplicação não encontrada\"}";
             }
 
-            // Listar usuários da aplicação
-            List<UsuarioAplicacao> usuariosAplicacao = usuarioAplicacaoDAO.listarPorAplicacao(idAplicacao);
+            // Verificar se o usuário logado é o owner da aplicação (apenas para token de usuário normal)
+            if (idUsuarioLogado != -1 && aplicacao.getIdUsuario() != idUsuarioLogado) {
+                response.status(403);
+                return "{\"success\": false, \"message\": \"Sem permissão para acessar esta aplicação\"}";
+            }
+
+            // Listar usuários da aplicação (incluindo inativos para o gerenciamento)
+            // Usar um método modificado do DAO que inclui inativos
+            List<UsuarioAplicacao> usuariosAplicacao = usuarioAplicacaoDAO.listarTodosPorAplicacao(idAplicacao);
             
             response.status(200);
             Map<String, Object> responseMap = new java.util.HashMap<>();
@@ -307,6 +319,176 @@ public class CadastroAplicacaoService {
         } catch (Exception e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    public Object alterarKeyUsuario(Request request, Response response) {
+        try {
+            // Verificar se o usuário tem permissão (owner da aplicação)
+            String authHeader = request.headers("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                response.status(401);
+                return "{\"success\": false, \"message\": \"Token de acesso requerido\"}";
+            }
+
+            String token = authHeader.substring(7);
+            int idUsuarioLogado = JwtUtil.getUserIdFromToken(token);
+            if (idUsuarioLogado == -1) {
+                response.status(401);
+                return "{\"success\": false, \"message\": \"Token inválido\"}";
+            }
+
+            String idAplicacaoStr = request.params(":idAplicacao");
+            String idUsuarioAplicacaoStr = request.params(":idUsuarioAplicacao");
+
+            Integer idAplicacao = Integer.parseInt(idAplicacaoStr);
+            Integer idUsuarioAplicacao = Integer.parseInt(idUsuarioAplicacaoStr);
+
+            // Verificar se o usuário logado é o owner da aplicação
+            Aplicacao aplicacao = aplicacaoDAO.buscarPorId(idAplicacao);
+            if (aplicacao == null || aplicacao.getIdUsuario() != idUsuarioLogado) {
+                response.status(403);
+                return "{\"success\": false, \"message\": \"Sem permissão para gerenciar esta aplicação\"}";
+            }
+
+            // Parse do body
+            @SuppressWarnings("unchecked")
+            Map<String, Object> requestBody = objectMapper.readValue(request.body(), Map.class);
+            Integer novaIdKey = (Integer) requestBody.get("id_key");
+
+            if (novaIdKey == null) {
+                response.status(400);
+                return "{\"success\": false, \"message\": \"ID da nova key é obrigatório\"}";
+            }
+
+            // Verificar se a key existe e pertence à aplicação
+            dao.KeyDAO keyDAO = new dao.KeyDAO();
+            model.Key key = keyDAO.buscarPorId(novaIdKey);
+            if (key == null || key.getIdAplicacao() != idAplicacao) {
+                response.status(400);
+                return "{\"success\": false, \"message\": \"Key inválida ou não pertence a esta aplicação\"}";
+            }
+
+            // Alterar a key
+            boolean sucesso = usuarioAplicacaoDAO.alterarKey(idUsuarioAplicacao, novaIdKey);
+            
+            if (sucesso) {
+                response.status(200);
+                return "{\"success\": true, \"message\": \"Key alterada com sucesso\"}";
+            } else {
+                response.status(500);
+                return "{\"success\": false, \"message\": \"Erro ao alterar key\"}";
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.status(500);
+            return "{\"success\": false, \"message\": \"Erro interno do servidor\"}";
+        }
+    }
+
+    public Object removerUsuarioDaAplicacao(Request request, Response response) {
+        try {
+            // Verificar se o usuário tem permissão (owner da aplicação)
+            String authHeader = request.headers("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                response.status(401);
+                return "{\"success\": false, \"message\": \"Token de acesso requerido\"}";
+            }
+
+            String token = authHeader.substring(7);
+            int idUsuarioLogado = JwtUtil.getUserIdFromToken(token);
+            if (idUsuarioLogado == -1) {
+                response.status(401);
+                return "{\"success\": false, \"message\": \"Token inválido\"}";
+            }
+
+            String idAplicacaoStr = request.params(":idAplicacao");
+            String idUsuarioAplicacaoStr = request.params(":idUsuarioAplicacao");
+
+            Integer idAplicacao = Integer.parseInt(idAplicacaoStr);
+            Integer idUsuarioAplicacao = Integer.parseInt(idUsuarioAplicacaoStr);
+
+            // Verificar se o usuário logado é o owner da aplicação
+            Aplicacao aplicacao = aplicacaoDAO.buscarPorId(idAplicacao);
+            if (aplicacao == null || aplicacao.getIdUsuario() != idUsuarioLogado) {
+                response.status(403);
+                return "{\"success\": false, \"message\": \"Sem permissão para gerenciar esta aplicação\"}";
+            }
+
+            // Desativar usuário na aplicação
+            boolean sucesso = usuarioAplicacaoDAO.desativar(idUsuarioAplicacao);
+            
+            if (sucesso) {
+                response.status(200);
+                return "{\"success\": true, \"message\": \"Usuário removido da aplicação com sucesso\"}";
+            } else {
+                response.status(500);
+                return "{\"success\": false, \"message\": \"Erro ao remover usuário\"}";
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.status(500);
+            return "{\"success\": false, \"message\": \"Erro interno do servidor\"}";
+        }
+    }
+
+    public Object alterarStatusUsuario(Request request, Response response) {
+        try {
+            // Verificar se o usuário tem permissão (owner da aplicação)
+            String authHeader = request.headers("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                response.status(401);
+                return "{\"success\": false, \"message\": \"Token de acesso requerido\"}";
+            }
+
+            String token = authHeader.substring(7);
+            int idUsuarioLogado = JwtUtil.getUserIdFromToken(token);
+            if (idUsuarioLogado == -1) {
+                response.status(401);
+                return "{\"success\": false, \"message\": \"Token inválido\"}";
+            }
+
+            String idAplicacaoStr = request.params(":idAplicacao");
+            String idUsuarioAplicacaoStr = request.params(":idUsuarioAplicacao");
+
+            Integer idAplicacao = Integer.parseInt(idAplicacaoStr);
+            Integer idUsuarioAplicacao = Integer.parseInt(idUsuarioAplicacaoStr);
+
+            // Verificar se o usuário logado é o owner da aplicação
+            Aplicacao aplicacao = aplicacaoDAO.buscarPorId(idAplicacao);
+            if (aplicacao == null || aplicacao.getIdUsuario() != idUsuarioLogado) {
+                response.status(403);
+                return "{\"success\": false, \"message\": \"Sem permissão para gerenciar esta aplicação\"}";
+            }
+
+            // Parse do body
+            @SuppressWarnings("unchecked")
+            Map<String, Object> requestBody = objectMapper.readValue(request.body(), Map.class);
+            Boolean ativo = (Boolean) requestBody.get("ativo");
+
+            if (ativo == null) {
+                response.status(400);
+                return "{\"success\": false, \"message\": \"Status é obrigatório\"}";
+            }
+
+            // Alterar status
+            boolean sucesso = usuarioAplicacaoDAO.alterarStatus(idUsuarioAplicacao, ativo);
+            
+            if (sucesso) {
+                String status = ativo ? "ativado" : "desativado";
+                response.status(200);
+                return "{\"success\": true, \"message\": \"Usuário " + status + " com sucesso\"}";
+            } else {
+                response.status(500);
+                return "{\"success\": false, \"message\": \"Erro ao alterar status do usuário\"}";
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.status(500);
+            return "{\"success\": false, \"message\": \"Erro interno do servidor\"}";
         }
     }
 

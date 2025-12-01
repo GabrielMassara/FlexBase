@@ -121,6 +121,12 @@ public class Aplicacao {
         post("/api/login/:idAplicacao", (request, response) -> cadastroService.loginNaAplicacao(request, response));
         get("/api/aplicacao/:idAplicacao/usuarios", (request, response) -> cadastroService.listarUsuariosDaAplicacao(request, response));
         
+        // === ROTAS PARA GERENCIAMENTO DE USUÁRIOS DA APLICAÇÃO ===
+        before("/api/aplicacao/:idAplicacao/usuarios/*", AuthFilter.authenticate);
+        put("/api/aplicacao/:idAplicacao/usuarios/:idUsuarioAplicacao/key", (request, response) -> cadastroService.alterarKeyUsuario(request, response));
+        delete("/api/aplicacao/:idAplicacao/usuarios/:idUsuarioAplicacao", (request, response) -> cadastroService.removerUsuarioDaAplicacao(request, response));
+        put("/api/aplicacao/:idAplicacao/usuarios/:idUsuarioAplicacao/status", (request, response) -> cadastroService.alterarStatusUsuario(request, response));
+        
         // === ROTA PARA GERAR OS ENDPOINTS ===
         before("/api/generateEndpoints/:idAplicacao", AuthFilter.authenticate);
         post("/api/generateEndpoints/:idAplicacao", (request, response) -> geradorEndpointsService.generateEndpoints(request, response));

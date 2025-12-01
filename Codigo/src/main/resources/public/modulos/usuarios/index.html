@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlexBase - Gerenciar Usuários</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/db.css">
+    <link rel="stylesheet" href="../../assets/css/dashboard.css">
+</head>
+<body>
+    <!-- Floating Glass Navbar -->
+    <nav class="floating-navbar">
+        <div class="navbar-content">
+            <div class="navbar-brand">
+                <h1 class="logo"><img src="../../assets/img/logo.png" alt="FlexBase" width="30px"></h1>
+            </div>
+            <div class="navbar-actions">
+                <button class="btn-glass btn-secondary" onclick="window.location.href='../dashboard/index.html'">
+                    <i class="bi bi-arrow-left"></i>
+                    <span>Voltar</span>
+                </button>
+                <button class="btn-glass btn-secondary">
+                    <i class="bi bi-person-circle"></i>
+                    <span>Meu Perfil</span>
+                </button>
+                <button id="themeToggle" class="btn-glass btn-theme">
+                    <i class="bi bi-sun"></i>
+                </button>
+                <button id="logoutBtn" class="btn-glass" style="background: rgba(220, 53, 69, 0.2); color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.3);">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-container" style="height: 100vh;">
+        <!-- Fundo com grade pontilhada -->
+        <div class="canvas-grid"></div>
+        
+        <div class="main-content">
+            <div class="container-fluid">
+                <!-- Cabeçalho da página -->
+                <div class="page-header">
+                    <h1 class="page-title">
+                        <i class="bi bi-people me-2"></i>
+                        Gerenciar Usuários da Aplicação
+                    </h1>
+                    <p class="page-subtitle">Gerencie usuários, permissões e chaves de acesso</p>
+                </div>
+
+                <!-- Informações da Aplicação -->
+                <div class="row mb-4">
+                    <div class="col-lg-12">
+                        <div class="card bg-dark border-secondary">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-gear me-2"></i>
+                                    <span id="nomeAplicacao">Carregando aplicação...</span>
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted mb-0">Gerencie os usuários desta aplicação</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seção de Usuários -->
+                <div id="usuariosSection">
+                    <!-- Cabeçalho da lista -->
+                    <div class="row mb-3">
+                        <div class="col-lg-6">
+                            <h3 class="text-light">
+                                <i class="bi bi-people-fill me-2"></i>
+                                Usuários Cadastrados
+                            </h3>
+                        </div>
+                        <div class="col-lg-6 text-end">
+                            <!-- Toggle de visualização -->
+                            <div class="btn-group me-2" role="group" aria-label="Tipo de visualização">
+                                <input type="radio" class="btn-check" name="viewType" id="viewCards" value="cards" checked>
+                                <label class="btn btn-outline-secondary" for="viewCards">
+                                    <i class="bi bi-grid-3x2-gap me-1"></i>
+                                    Cards
+                                </label>
+                                
+                                <input type="radio" class="btn-check" name="viewType" id="viewTable" value="table">
+                                <label class="btn btn-outline-secondary" for="viewTable">
+                                    <i class="bi bi-table me-1"></i>
+                                    Tabela
+                                </label>
+                            </div>
+                            
+                            <button id="btnRefresh" class="btn btn-outline-info">
+                                <i class="bi bi-arrow-clockwise me-1"></i>
+                                Atualizar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Usuários - Cards -->
+                    <div class="row" id="usuariosList" style="display: block;">
+                        <!-- Os usuários serão carregados aqui -->
+                    </div>
+
+                    <!-- Lista de Usuários - Tabela -->
+                    <div id="usuariosTable" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="table table-dark table-striped table-hover align-middle">
+                                <thead class="table-secondary">
+                                    <tr>
+                                        <th style="width: 100px;">Status</th>
+                                        <th style="min-width: 200px;">Usuário</th>
+                                        <th style="min-width: 200px;">Email</th>
+                                        <th style="min-width: 180px;">Key de Acesso</th>
+                                        <th style="min-width: 150px;">Data de Vínculo</th>
+                                        <th class="text-center" style="width: 120px;">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usuariosTableBody">
+                                    <!-- Os usuários serão carregados aqui -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="loadingUsers" class="text-center py-4" style="display: none;">
+                        <div class="spinner-border text-info" role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                        <p class="text-light mt-2">Carregando usuários...</p>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="emptyUsers" class="text-center py-5" style="display: none;">
+                        <i class="bi bi-person-x text-secondary" style="font-size: 4rem;"></i>
+                        <h4 class="text-secondary mt-3">Nenhum usuário encontrado</h4>
+                        <p class="text-muted">Esta aplicação ainda não possui usuários cadastrados.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para Alterar Key -->
+    <div class="modal fade" id="alterarKeyModal" tabindex="-1" aria-labelledby="alterarKeyModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-dark border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-light" id="alterarKeyModalLabel">
+                        <i class="bi bi-key me-2"></i>
+                        Alterar Key do Usuário
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formAlterarKey">
+                        <input type="hidden" id="usuarioAplicacaoId" name="usuarioAplicacaoId">
+                        
+                        <div class="mb-3">
+                            <label class="form-label text-light">Usuário:</label>
+                            <p id="nomeUsuarioSelecionado" class="text-info fw-bold"></p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="selectNovaKey" class="form-label text-light">Nova Key de Acesso:</label>
+                            <select id="selectNovaKey" name="novaKey" class="form-select bg-dark border-secondary text-light" required>
+                                <option value="">Carregando keys...</option>
+                            </select>
+                            <div class="form-text text-muted">
+                                A key define quais endpoints o usuário pode acessar.
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i>
+                        Cancelar
+                    </button>
+                    <button type="button" id="btnConfirmarAlterarKey" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i>
+                        Alterar Key
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Confirmar Remoção -->
+    <div class="modal fade" id="removerUsuarioModal" tabindex="-1" aria-labelledby="removerUsuarioModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-light" id="removerUsuarioModalLabel">
+                        <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                        Confirmar Remoção
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-light">
+                    <p>Tem certeza que deseja remover o usuário <strong id="nomeUsuarioRemover"></strong> desta aplicação?</p>
+                    <div class="alert alert-warning" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Esta ação não pode ser desfeita. O usuário perderá acesso à aplicação.
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i>
+                        Cancelar
+                    </button>
+                    <button type="button" id="btnConfirmarRemover" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i>
+                        Remover Usuário
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container para notificações toast -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1200;"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../assets/js/config.js"></script>
+    <script>
+        // Verificar se CONFIG foi carregado
+        if (typeof CONFIG === 'undefined') {
+            console.error('CONFIG não foi carregado! Usando valores padrão.');
+            window.CONFIG = { API_BASE_URL: 'http://localhost:80/api' };
+        }
+    </script>
+    <script src="../../assets/js/usuarios.js"></script>
+</body>
+</html>

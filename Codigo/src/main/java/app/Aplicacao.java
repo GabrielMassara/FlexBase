@@ -10,6 +10,7 @@ import service.RegistroService;
 import service.GeradorEndpointsService;
 import service.EndpointExecutorService;
 import service.KeyService;
+import service.CadastroAplicacaoService;
 import util.AuthFilter;
 
 public class Aplicacao {
@@ -102,6 +103,12 @@ public class Aplicacao {
         post("/api/keys", (request, response) -> keyService.inserir(request, response));
         put("/api/keys/:id", (request, response) -> keyService.atualizar(request, response));
         delete("/api/keys/:id", (request, response) -> keyService.excluir(request, response));
+        
+        // === ROTAS DE CADASTRO DE USUÁRIO EM APLICAÇÃO ===
+        CadastroAplicacaoService cadastroService = new CadastroAplicacaoService();
+        
+        post("/api/cadastro/:idAplicacao", (request, response) -> cadastroService.cadastrarUsuarioNaAplicacao(request, response));
+        get("/api/aplicacao/:idAplicacao/usuarios", (request, response) -> cadastroService.listarUsuariosDaAplicacao(request, response));
         
         // === ROTA PARA GERAR OS ENDPOINTS ===
         before("/api/generateEndpoints/:idAplicacao", AuthFilter.authenticate);

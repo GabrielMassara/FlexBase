@@ -144,6 +144,7 @@ CREATE TABLE tb_usuario_aplicacao (
     id_usuario INTEGER NOT NULL,
     id_aplicacao INTEGER NOT NULL,
     id_key INTEGER NOT NULL,
+    dados_usuario JSONB,
     data_vinculo TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT fk_usuario_aplicacao_usuario 
@@ -179,6 +180,7 @@ CREATE INDEX idx_tb_keys_id_aplicacao ON tb_keys(id_aplicacao);
 CREATE INDEX idx_tb_usuario_aplicacao_id_usuario ON tb_usuario_aplicacao(id_usuario);
 CREATE INDEX idx_tb_usuario_aplicacao_id_aplicacao ON tb_usuario_aplicacao(id_aplicacao);
 CREATE INDEX idx_tb_usuario_aplicacao_id_key ON tb_usuario_aplicacao(id_key);
+CREATE INDEX idx_tb_usuario_aplicacao_dados ON tb_usuario_aplicacao USING GIN(dados_usuario);
 
 -- --------------------------------------------------------
 

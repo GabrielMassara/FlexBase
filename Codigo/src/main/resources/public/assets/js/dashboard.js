@@ -80,6 +80,15 @@ function setupEventListeners() {
         });
     }
     
+    // Navegação para banco de dados
+    const databaseCard = document.querySelector('.database-card');
+    if (databaseCard) {
+        databaseCard.addEventListener('click', function(e) {
+            e.preventDefault();
+            navigateToDatabase();
+        });
+    }
+    
     // Outros cards (desabilitados por enquanto)
     setupDisabledCards();
 }
@@ -108,6 +117,19 @@ function navigateToKeys() {
     
     // Redirecionar para o gerenciamento de keys
     window.location.href = `../keys/index.html?idAplicacao=${appId}`;
+}
+
+function navigateToDatabase() {
+    // Obter ID da aplicação da URL
+    const appId = getApplicationIdFromUrl();
+    
+    if (!appId) {
+        showNotification('ID da aplicação não encontrado.', 'error');
+        return;
+    }
+    
+    // Redirecionar para o banco de dados
+    window.location.href = `../database/index.html?id=${appId}`;
 }
 
 function setupDisabledCards() {
@@ -177,6 +199,7 @@ function checkSelectedApplication() {
     const appId = getApplicationIdFromUrl();
     const diagramCard = document.querySelector('.diagram-card');
     const keysCard = document.querySelector('.keys-card');
+    const databaseCard = document.querySelector('.database-card');
     
     if (appId) {
         // Habilitar cards se há ID da aplicação
@@ -190,6 +213,12 @@ function checkSelectedApplication() {
             keysCard.classList.remove('disabled');
             keysCard.querySelector('.action-card-status').textContent = 'Disponível';
             keysCard.querySelector('.action-card-status').className = 'action-card-status status-available';
+        }
+        
+        if (databaseCard) {
+            databaseCard.classList.remove('disabled');
+            databaseCard.querySelector('.action-card-status').textContent = 'Disponível';
+            databaseCard.querySelector('.action-card-status').className = 'action-card-status status-available';
         }
         
         // Carregar informações da aplicação
@@ -206,6 +235,12 @@ function checkSelectedApplication() {
             keysCard.classList.add('disabled');
             keysCard.querySelector('.action-card-status').textContent = 'ID não fornecido';
             keysCard.querySelector('.action-card-status').className = 'action-card-status status-disabled';
+        }
+        
+        if (databaseCard) {
+            databaseCard.classList.add('disabled');
+            databaseCard.querySelector('.action-card-status').textContent = 'ID não fornecido';
+            databaseCard.querySelector('.action-card-status').className = 'action-card-status status-disabled';
         }
     }
 }

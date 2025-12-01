@@ -230,11 +230,23 @@ public class RegistroService {
             RegistroDAO registroDAO = new RegistroDAO();
             AplicacaoDAO aplicacaoDAO = new AplicacaoDAO();
             
-            // Verificar se aplicação existe
-            if (aplicacaoDAO.buscarPorId(registro.getIdAplicacao()) == null) {
+            // Verificar se aplicação existe e obter schema
+            Aplicacao aplicacao = aplicacaoDAO.buscarPorId(registro.getIdAplicacao());
+            if (aplicacao == null) {
                 response.status(400);
                 return criarRespostaErro(mapper, "Aplicação não encontrada");
             }
+            
+            // Validar referências antes de inserir
+            String erroValidacao = validarReferencias(registro.getValor(), registro.getIdAplicacao(), mapper);
+            if (erroValidacao != null) {
+                response.status(400);
+                return criarRespostaErro(mapper, erroValidacao);
+            }
+            
+            // Aplicar regras do schema antes de inserir
+            com.fasterxml.jackson.databind.JsonNode valorProcessado = aplicarRegrasSchema(registro, aplicacao, registroDAO, mapper);
+            registro.setValor(valorProcessado);
             
             if (registroDAO.inserir(registro)) {
                 response.status(201);
@@ -253,6 +265,145 @@ public class RegistroService {
         }
     }
     
+    private com.fasterxml.jackson.databind.JsonNode aplicarRegrasSchema(Registro registro, Aplicacao aplicacao, RegistroDAO registroDAO, JsonMapper mapper) throws Exception {
+        // Se não há schema, usar valor original
+        if (aplicacao.getSchemaBanco() == null) {
+            return registro.getValor();
+        }
+        
+        // Parse do schema
+        com.fasterxml.jackson.databind.JsonNode schemaBanco = aplicacao.getSchemaBanco();
+        
+        // Buscar tabela no schema
+        com.fasterxml.jackson.databind.JsonNode tabelas = schemaBanco.get("tabelas");
+        if (tabelas == null || !tabelas.isArray()) {
+            return registro.getValor();
+        }
+        
+        com.fasterxml.jackson.databind.JsonNode tabelaSchema = null;
+        for (com.fasterxml.jackson.databind.JsonNode tabela : tabelas) {
+            if (registro.getTabela().equals(tabela.get("nome").asText())) {
+                tabelaSchema = tabela;
+                break;
+            }
+        }
+        
+        if (tabelaSchema == null) {
+            return registro.getValor();
+        }
+        
+        // Parse do valor do registro
+        Map<String, Object> valorMap = mapper.convertValue(registro.getValor(), new TypeReference<Map<String, Object>>() {});
+        
+        // Aplicar regras dos campos
+        com.fasterxml.jackson.databind.JsonNode campos = tabelaSchema.get("campos");
+        if (campos != null && campos.isArray()) {
+            for (com.fasterxml.jackson.databind.JsonNode campo : campos) {
+                String nomeCampo = campo.get("nome").asText();
+                String tipoCampo = campo.get("tipo").asText();
+                boolean isChavePrimaria = campo.has("chave_primaria") && campo.get("chave_primaria").asBoolean();
+                
+                // Aplicar auto incremento para campos ID ou chave primária
+                if (isChavePrimaria || "id".equals(tipoCampo)) {
+                    // Sempre gerar novo ID usando a função do banco
+                    long novoId = registroDAO.obterProximoId(registro.getIdAplicacao(), registro.getTabela());
+                    valorMap.put(nomeCampo, novoId);
+                }
+                // Aplicar criptografia se necessário
+                else if ("criptografia".equals(tipoCampo)) {
+                    Object valor = valorMap.get(nomeCampo);
+                    if (valor != null) {
+                        String valorStr = valor.toString();
+                        if (!valorStr.isEmpty()) {
+                            // Aplicar MD5 (usando a mesma lógica do GeradorEndpointsService)
+                            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+                            byte[] digest = md.digest(valorStr.getBytes());
+                            StringBuilder sb = new StringBuilder();
+                            for (byte b : digest) {
+                                sb.append(String.format("%02x", b));
+                            }
+                            valorMap.put(nomeCampo, sb.toString());
+                        }
+                    }
+                }
+            }
+        }
+        
+        return mapper.valueToTree(valorMap);
+    }
+    
+    private com.fasterxml.jackson.databind.JsonNode aplicarRegrasSchemaParaAtualizacao(Registro registroNovo, Registro registroExistente, Aplicacao aplicacao, JsonMapper mapper) throws Exception {
+        // Se não há schema, usar valor original
+        if (aplicacao.getSchemaBanco() == null) {
+            return registroNovo.getValor();
+        }
+        
+        // Parse do schema
+        com.fasterxml.jackson.databind.JsonNode schemaBanco = aplicacao.getSchemaBanco();
+        
+        // Buscar tabela no schema
+        com.fasterxml.jackson.databind.JsonNode tabelas = schemaBanco.get("tabelas");
+        if (tabelas == null || !tabelas.isArray()) {
+            return registroNovo.getValor();
+        }
+        
+        com.fasterxml.jackson.databind.JsonNode tabelaSchema = null;
+        for (com.fasterxml.jackson.databind.JsonNode tabela : tabelas) {
+            if (registroNovo.getTabela().equals(tabela.get("nome").asText())) {
+                tabelaSchema = tabela;
+                break;
+            }
+        }
+        
+        if (tabelaSchema == null) {
+            return registroNovo.getValor();
+        }
+        
+        // Parse dos valores
+        Map<String, Object> valorNovoMap = mapper.convertValue(registroNovo.getValor(), new TypeReference<Map<String, Object>>() {});
+        Map<String, Object> valorExistenteMap = mapper.convertValue(registroExistente.getValor(), new TypeReference<Map<String, Object>>() {});
+        
+        // Aplicar regras dos campos
+        com.fasterxml.jackson.databind.JsonNode campos = tabelaSchema.get("campos");
+        if (campos != null && campos.isArray()) {
+            for (com.fasterxml.jackson.databind.JsonNode campo : campos) {
+                String nomeCampo = campo.get("nome").asText();
+                String tipoCampo = campo.get("tipo").asText();
+                boolean isChavePrimaria = campo.has("chave_primaria") && campo.get("chave_primaria").asBoolean();
+                
+                // Preservar campos ID ou chave primária - manter valor existente
+                if (isChavePrimaria || "id".equals(tipoCampo)) {
+                    Object valorExistente = valorExistenteMap.get(nomeCampo);
+                    if (valorExistente != null) {
+                        valorNovoMap.put(nomeCampo, valorExistente);
+                    }
+                }
+                // Aplicar criptografia se necessário para campos alterados
+                else if ("criptografia".equals(tipoCampo)) {
+                    Object valorNovo = valorNovoMap.get(nomeCampo);
+                    if (valorNovo != null) {
+                        String valorStr = valorNovo.toString();
+                        if (!valorStr.isEmpty()) {
+                            // Só aplicar MD5 se o valor foi realmente alterado
+                            Object valorExistente = valorExistenteMap.get(nomeCampo);
+                            if (valorExistente == null || !valorStr.equals(valorExistente.toString())) {
+                                java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+                                byte[] digest = md.digest(valorStr.getBytes());
+                                StringBuilder sb = new StringBuilder();
+                                for (byte b : digest) {
+                                    sb.append(String.format("%02x", b));
+                                }
+                                valorNovoMap.put(nomeCampo, sb.toString());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return mapper.valueToTree(valorNovoMap);
+    }
+    
     public Object atualizar(Request request, Response response) {
         response.type("application/json");
         JsonMapper mapper = JsonMapper.builder().build();
@@ -269,11 +420,28 @@ public class RegistroService {
             }
             
             RegistroDAO registroDAO = new RegistroDAO();
+            AplicacaoDAO aplicacaoDAO = new AplicacaoDAO();
             
             // Verificar se registro existe
-            if (registroDAO.buscarPorId(id) == null) {
+            Registro registroExistente = registroDAO.buscarPorId(id);
+            if (registroExistente == null) {
                 response.status(404);
                 return criarRespostaErro(mapper, "Registro não encontrado");
+            }
+            
+            // Obter aplicação e schema
+            Aplicacao aplicacao = aplicacaoDAO.buscarPorId(registro.getIdAplicacao());
+            if (aplicacao != null) {
+                // Validar referências antes de atualizar
+                String erroValidacao = validarReferencias(registro.getValor(), registro.getIdAplicacao(), mapper);
+                if (erroValidacao != null) {
+                    response.status(400);
+                    return criarRespostaErro(mapper, erroValidacao);
+                }
+                
+                // Aplicar regras do schema para preservar IDs e outros campos especiais
+                com.fasterxml.jackson.databind.JsonNode valorProcessado = aplicarRegrasSchemaParaAtualizacao(registro, registroExistente, aplicacao, mapper);
+                registro.setValor(valorProcessado);
             }
             
             if (registroDAO.atualizar(registro)) {
@@ -386,6 +554,124 @@ public class RegistroService {
             e.printStackTrace();
             response.status(500);
             return criarRespostaErro(mapper, "Erro interno do servidor");
+        }
+    }
+    
+    private String validarReferencias(com.fasterxml.jackson.databind.JsonNode valorJson, int idAplicacao, JsonMapper mapper) {
+        try {
+            if (valorJson == null) {
+                return null; // Sem dados para validar
+            }
+            
+            // Verificar campos que podem ser referências (terminam com _id, id_, ou são apenas "id")
+            valorJson.fieldNames().forEachRemaining(fieldName -> {
+                com.fasterxml.jackson.databind.JsonNode fieldNode = valorJson.get(fieldName);
+                
+                // Verificar se é um campo de referência (ID de outra tabela)
+                if (isReferenciaField(fieldName) && !fieldNode.isNull() && fieldNode.isNumber()) {
+                    int referenciaId = fieldNode.asInt();
+                    String tabelaReferenciada = obterTabelaReferenciada(fieldName);
+                    
+                    if (tabelaReferenciada != null && !existeRegistro(tabelaReferenciada, referenciaId, idAplicacao)) {
+                        throw new RuntimeException("Referência inválida: " + fieldName + " = " + referenciaId + " não existe na tabela " + tabelaReferenciada);
+                    }
+                }
+            });
+            
+            return null; // Todas as referências são válidas
+            
+        } catch (RuntimeException e) {
+            return e.getMessage();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null; // Em caso de erro, não bloquear
+        }
+    }
+    
+    private boolean isReferenciaField(String fieldName) {
+        // Considerar campos que são referências:
+        // - Terminam com "_id" (ex: cliente_id, produto_id)
+        // - Começam com "id_" (ex: id_cliente, id_produto)  
+        // - São compostos como "id_x" onde x é inicial da tabela (ex: id_c, id_p)
+        // - NÃO incluir campo "id" simples (chave primária da própria tabela)
+        
+        return !fieldName.equals("id") && 
+               (fieldName.endsWith("_id") || 
+                fieldName.startsWith("id_") || 
+                fieldName.matches("id_[a-zA-Z]+"));
+    }
+    
+    private String obterTabelaReferenciada(String fieldName) {
+        // Mapear nome do campo para nome da tabela
+        // Convenções possíveis:
+        // id_c -> clientes, id_p -> produtos, etc.
+        // cliente_id -> clientes, produto_id -> produtos
+        // id_cliente -> clientes, id_produto -> produtos
+        
+        if (fieldName.equals("id_c")) return "clientes";
+        if (fieldName.equals("id_p")) return "produtos";
+        
+        // Para campos como "cliente_id" -> "clientes"
+        if (fieldName.endsWith("_id")) {
+            String base = fieldName.substring(0, fieldName.length() - 3);
+            return pluralizarTabela(base);
+        }
+        
+        // Para campos como "id_cliente" -> "clientes"  
+        if (fieldName.startsWith("id_")) {
+            String base = fieldName.substring(3);
+            return pluralizarTabela(base);
+        }
+        
+        return null; // Não é possível determinar a tabela
+    }
+    
+    private String pluralizarTabela(String nomeBase) {
+        // Regras simples de pluralização em português
+        if (nomeBase.equals("cliente")) return "clientes";
+        if (nomeBase.equals("produto")) return "produtos";
+        if (nomeBase.equals("usuario")) return "usuarios";
+        if (nomeBase.equals("categoria")) return "categorias";
+        
+        // Regra geral: adicionar 's' se não termina com 's'
+        if (!nomeBase.endsWith("s")) {
+            return nomeBase + "s";
+        }
+        
+        return nomeBase;
+    }
+    
+    private boolean existeRegistro(String tabela, int id, int idAplicacao) {
+        try {
+            RegistroDAO registroDAO = new RegistroDAO();
+            List<Registro> registros = registroDAO.buscarPorAplicacao(idAplicacao);
+            
+            for (Registro registro : registros) {
+                if (registro.getTabela().equals(tabela)) {
+                    // Parse do JSON para verificar se tem o ID procurado
+                    try {
+                        JsonMapper mapper = JsonMapper.builder().build();
+                        Map<String, Object> valorMap = mapper.convertValue(registro.getValor(), new TypeReference<Map<String, Object>>() {});
+                        
+                        // Verificar se existe um campo "id" com o valor procurado
+                        Object idObj = valorMap.get("id");
+                        if (idObj != null) {
+                            int registroId = Integer.parseInt(idObj.toString());
+                            if (registroId == id) {
+                                return true;
+                            }
+                        }
+                    } catch (Exception e) {
+                        // Ignorar erros de parsing e continuar
+                    }
+                }
+            }
+            
+            return false;
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false; // Em caso de erro, assumir que não existe
         }
     }
     

@@ -124,7 +124,7 @@ public class GeradorEndpointsService {
         if (endpointDAO.inserir(readAllEndpoint)) count++;
         
         // 3. READ BY ID (GET) - Buscar por ID
-        String readByIdQuery = gerarQuerySelectById(nomeTabela);
+        String readByIdQuery = gerarQuerySelectById(nomeTabela, campos);
         Endpoint readByIdEndpoint = new Endpoint(idAplicacao, "/" + nomeTabela + "/{id}", readByIdQuery, 1); // GET = 1
         if (endpointDAO.inserir(readByIdEndpoint)) count++;
         
@@ -134,7 +134,7 @@ public class GeradorEndpointsService {
         if (endpointDAO.inserir(updateEndpoint)) count++;
         
         // 5. DELETE (DELETE) - Excluir registro
-        String deleteQuery = gerarQueryDelete(nomeTabela);
+        String deleteQuery = gerarQueryDelete(nomeTabela, campos);
         Endpoint deleteEndpoint = new Endpoint(idAplicacao, "/" + nomeTabela + "/{id}", deleteQuery, 4); // DELETE = 4
         if (endpointDAO.inserir(deleteEndpoint)) count++;
         
@@ -178,14 +178,34 @@ public class GeradorEndpointsService {
                nomeTabela + "' AND id_aplicacao = ${id_aplicacao} ORDER BY (valor->>'id')::BIGINT";
     }
     
-    private String gerarQuerySelectById(String nomeTabela) {
-        return "SELECT id, (valor->>'id')::BIGINT as id_logico, valor FROM tb_registros WHERE tabela = '" + 
-               nomeTabela + "' AND id_aplicacao = ${id_aplicacao} AND (valor->>'id')::BIGINT = ${id}";
+    private String gerarQuerySelectById(String nomeTabela, JsonNode campos) {
+        // Encontrar qual é o campo chave primária
+        String campoPrimario = "id"; // padrão
+        for (JsonNode campo : campos) {
+            if ((campo.has("chave_primaria") && campo.get("chave_primaria").asBoolean()) ||
+                "id".equals(campo.get("tipo").asText())) {
+                campoPrimario = campo.get("nome").asText();
+                break;
+            }
+        }
+        
+        return "SELECT id, (valor->>'" + campoPrimario + "')::BIGINT as id_logico, valor FROM tb_registros WHERE tabela = '" + 
+               nomeTabela + "' AND id_aplicacao = ${id_aplicacao} AND (valor->>'" + campoPrimario + "')::BIGINT = ${id}";
     }
     
     private String gerarQueryUpdate(String nomeTabela, JsonNode campos) {
         StringBuilder query = new StringBuilder();
         query.append("UPDATE tb_registros SET valor = jsonb_build_object(");
+        
+        // Primeiro, encontrar qual é o campo chave primária
+        String campoPrimario = "id"; // padrão
+        for (JsonNode campo : campos) {
+            if ((campo.has("chave_primaria") && campo.get("chave_primaria").asBoolean()) ||
+                "id".equals(campo.get("tipo").asText())) {
+                campoPrimario = campo.get("nome").asText();
+                break;
+            }
+        }
         
         boolean primeiro = true;
         for (JsonNode campo : campos) {
@@ -211,14 +231,24 @@ public class GeradorEndpointsService {
         }
         
         query.append(") WHERE tabela = '").append(nomeTabela)
-             .append("' AND id_aplicacao = ${id_aplicacao} AND (valor->>'id')::BIGINT = ${id}");
+             .append("' AND id_aplicacao = ${id_aplicacao} AND (valor->>'").append(campoPrimario).append("')::BIGINT = ${id}");
         
         return query.toString();
     }
     
-    private String gerarQueryDelete(String nomeTabela) {
+    private String gerarQueryDelete(String nomeTabela, JsonNode campos) {
+        // Encontrar qual é o campo chave primária
+        String campoPrimario = "id"; // padrão
+        for (JsonNode campo : campos) {
+            if ((campo.has("chave_primaria") && campo.get("chave_primaria").asBoolean()) ||
+                "id".equals(campo.get("tipo").asText())) {
+                campoPrimario = campo.get("nome").asText();
+                break;
+            }
+        }
+        
         return "DELETE FROM tb_registros WHERE tabela = '" + nomeTabela + 
-               "' AND id_aplicacao = ${id_aplicacao} AND (valor->>'id')::BIGINT = ${id}";
+               "' AND id_aplicacao = ${id_aplicacao} AND (valor->>'" + campoPrimario + "')::BIGINT = ${id}";
     }
     
     private String criarRespostaErro(JsonMapper mapper, String mensagem) {

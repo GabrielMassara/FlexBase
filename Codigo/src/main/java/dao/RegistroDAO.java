@@ -257,4 +257,21 @@ public class RegistroDAO extends DAO {
         }
         return 0;
     }
+    
+    public long obterProximoId(int idAplicacao, String tabela) {
+        String query = "SELECT fn_next_id(?, ?)";
+        try {
+            PreparedStatement stmt = conexao.prepareStatement(query);
+            stmt.setInt(1, idAplicacao);
+            stmt.setString(2, tabela);
+            ResultSet rs = stmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getLong(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 1; // Fallback para 1 se houver erro
+    }
 }

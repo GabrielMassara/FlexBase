@@ -17,8 +17,8 @@ const CONFIG = {
         APLICACOES: '/aplicacoes',
         APLICACOES_MINHAS: '/aplicacoes',
         APLICACOES_ID: '/aplicacoes/{id}',
-        ENDPOINTS: '/endpoints',
-        ENDPOINTS_BY_APP: '/endpoints/aplicacao/{id}',
+        ENDPOINTS: '/endpointsManager',
+        ENDPOINTS_BY_APP: '/endpointsManager/aplicacao/{id}',
         REGISTROS: '/registros',
         REGISTROS_COUNT: '/registros/count'
     },

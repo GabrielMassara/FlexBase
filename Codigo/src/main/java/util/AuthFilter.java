@@ -63,7 +63,7 @@ public class AuthFilter {
         request.attribute("userEmail", userEmail);
     };
     
-    // FILTRO PARA VALIDAR TOKEN DE APLICAÇÃO (USADO NOS ENDPOINTS /api/endpoints/:idAplicacao/*)
+    // FILTRO PARA VALIDAR TOKEN DE APLICAÇÃO (USADO NOS ENDPOINTS /api/exec/:idAplicacao/*)
     public static Filter authenticateAppToken = (Request request, Response response) -> {
         response.type("application/json");
         

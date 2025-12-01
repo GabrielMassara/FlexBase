@@ -264,7 +264,7 @@
         async function carregarEndpoints() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`${CONFIG.API_BASE_URL}/endpoints/aplicacao/${idAplicacao}`, {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/endpointsManager/aplicacao/${idAplicacao}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'

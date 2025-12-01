@@ -63,8 +63,8 @@ public class Aplicacao {
         //before("/api/usuarios/*", AuthFilter.authenticate); // Proteger rotas específicas de usuário
         before("/api/aplicacoes", AuthFilter.authenticate);
         before("/api/aplicacoes/*", AuthFilter.authenticate);
-        before("/api/endpoints", AuthFilter.authenticate);
-        before("/api/endpoints/*", AuthFilter.authenticate);
+        before("/api/endpointsManager", AuthFilter.authenticate);
+        before("/api/endpointsManager/*", AuthFilter.authenticate);
         before("/api/registros", AuthFilter.authenticate);
         before("/api/registros/*", AuthFilter.authenticate);
         before("/api/keys", AuthFilter.authenticate);
@@ -87,13 +87,13 @@ public class Aplicacao {
         delete("/api/aplicacoes/:id", (request, response) -> aplicacaoService.excluir(request, response));
         
         // === ROTAS ENDPOINTS ===
-        get("/api/endpoints", (request, response) -> endpointService.listar(request, response));
-        get("/api/endpoints/:id", (request, response) -> endpointService.buscarPorId(request, response));
-        get("/api/endpoints/aplicacao/:idAplicacao", (request, response) -> endpointService.buscarPorAplicacao(request, response));
-        post("/api/endpoints/buscar", (request, response) -> endpointService.buscarComFiltro(request, response));
-        post("/api/endpoints", (request, response) -> endpointService.inserir(request, response));
-        put("/api/endpoints/:id", (request, response) -> endpointService.atualizar(request, response));
-        delete("/api/endpoints/:id", (request, response) -> endpointService.excluir(request, response));
+        get("/api/endpointsManager", (request, response) -> endpointService.listar(request, response));
+        get("/api/endpointsManager/:id", (request, response) -> endpointService.buscarPorId(request, response));
+        get("/api/endpointsManager/aplicacao/:idAplicacao", (request, response) -> endpointService.buscarPorAplicacao(request, response));
+        post("/api/endpointsManager/buscar", (request, response) -> endpointService.buscarComFiltro(request, response));
+        post("/api/endpointsManager", (request, response) -> endpointService.inserir(request, response));
+        put("/api/endpointsManager/:id", (request, response) -> endpointService.atualizar(request, response));
+        delete("/api/endpointsManager/:id", (request, response) -> endpointService.excluir(request, response));
         
         // === ROTAS REGISTROS ===
         get("/api/registros", (request, response) -> registroService.listar(request, response));

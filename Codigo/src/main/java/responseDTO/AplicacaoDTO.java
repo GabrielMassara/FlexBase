@@ -10,10 +10,12 @@ public class AplicacaoDTO {
     private String nomeUsuario;
     private String nomeBanco;
     private JsonNode schemaBanco;
+    private int idKeyBase;
+    private String codigoKeyBase;
     
     public AplicacaoDTO() {}
     
-    public AplicacaoDTO(int id, String nome, String readme, int idUsuario, String nomeUsuario, String nomeBanco, JsonNode schemaBanco) {
+    public AplicacaoDTO(int id, String nome, String readme, int idUsuario, String nomeUsuario, String nomeBanco, JsonNode schemaBanco, int idKeyBase, String codigoKeyBase) {
         this.id = id;
         this.nome = nome;
         this.readme = readme;
@@ -21,6 +23,8 @@ public class AplicacaoDTO {
         this.nomeUsuario = nomeUsuario;
         this.nomeBanco = nomeBanco;
         this.schemaBanco = schemaBanco;
+        this.idKeyBase = idKeyBase;
+        this.codigoKeyBase = codigoKeyBase;
     }
     
     public int getId() {
@@ -77,5 +81,21 @@ public class AplicacaoDTO {
     
     public void setSchemaBanco(JsonNode schemaBanco) {
         this.schemaBanco = schemaBanco;
+    }
+    
+    public int getIdKeyBase() {
+        return idKeyBase;
+    }
+    
+    public void setIdKeyBase(int idKeyBase) {
+        this.idKeyBase = idKeyBase;
+    }
+    
+    public String getCodigoKeyBase() {
+        return codigoKeyBase;
+    }
+    
+    public void setCodigoKeyBase(String codigoKeyBase) {
+        this.codigoKeyBase = codigoKeyBase;
     }
 }

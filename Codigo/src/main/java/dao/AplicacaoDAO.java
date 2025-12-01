@@ -16,7 +16,7 @@ public class AplicacaoDAO extends DAO {
     }
 
     public boolean inserir(Aplicacao aplicacao) {
-        String query = "INSERT INTO tb_aplicacao (nome, readme, id_usuario, nome_banco, schema_banco) VALUES (?, ?, ?, ?, ?::jsonb) RETURNING id";
+        String query = "SELECT * FROM fn_create_aplicacao_with_base_key(?, ?, ?, ?, ?::jsonb)";
         try {
             PreparedStatement stmt = conexao.prepareStatement(query);
             stmt.setString(1, aplicacao.getNome());
@@ -27,7 +27,9 @@ public class AplicacaoDAO extends DAO {
             
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                aplicacao.setId(rs.getInt("id"));
+                aplicacao.setId(rs.getInt("id_aplicacao"));
+                aplicacao.setIdKeyBase(rs.getInt("id_key_base"));
+                aplicacao.setCodigoKeyBase(rs.getString("codigo_key"));
                 return true;
             }
             return false;
@@ -38,7 +40,8 @@ public class AplicacaoDAO extends DAO {
     }
 
     public Aplicacao buscarPorId(int id) {
-        String query = "SELECT * FROM tb_aplicacao WHERE id = ?";
+        String query = "SELECT a.*, k.codigo as codigo_key_base FROM tb_aplicacao a " +
+                      "LEFT JOIN tb_keys k ON a.id_key_base = k.id WHERE a.id = ?";
         try {
             PreparedStatement stmt = conexao.prepareStatement(query);
             stmt.setInt(1, id);
@@ -51,6 +54,8 @@ public class AplicacaoDAO extends DAO {
                 aplicacao.setReadme(rs.getString("readme"));
                 aplicacao.setIdUsuario(rs.getInt("id_usuario"));
                 aplicacao.setNomeBanco(rs.getString("nome_banco"));
+                aplicacao.setIdKeyBase(rs.getInt("id_key_base"));
+                aplicacao.setCodigoKeyBase(rs.getString("codigo_key_base"));
                 
                 String schemaJson = rs.getString("schema_banco");
                 if (schemaJson != null) {
@@ -71,7 +76,8 @@ public class AplicacaoDAO extends DAO {
     }
 
     public List<Aplicacao> listarTodos() {
-        String query = "SELECT * FROM tb_aplicacao";
+        String query = "SELECT a.*, k.codigo as codigo_key_base FROM tb_aplicacao a " +
+                      "LEFT JOIN tb_keys k ON a.id_key_base = k.id";
         List<Aplicacao> aplicacoes = new ArrayList<>();
         try {
             PreparedStatement stmt = conexao.prepareStatement(query);
@@ -84,6 +90,8 @@ public class AplicacaoDAO extends DAO {
                 aplicacao.setReadme(rs.getString("readme"));
                 aplicacao.setIdUsuario(rs.getInt("id_usuario"));
                 aplicacao.setNomeBanco(rs.getString("nome_banco"));
+                aplicacao.setIdKeyBase(rs.getInt("id_key_base"));
+                aplicacao.setCodigoKeyBase(rs.getString("codigo_key_base"));
                 
                 String schemaJson = rs.getString("schema_banco");
                 if (schemaJson != null) {
@@ -104,7 +112,8 @@ public class AplicacaoDAO extends DAO {
     }
 
     public List<Aplicacao> buscarPorUsuario(int idUsuario) {
-        String query = "SELECT * FROM tb_aplicacao WHERE id_usuario = ?";
+        String query = "SELECT a.*, k.codigo as codigo_key_base FROM tb_aplicacao a " +
+                      "LEFT JOIN tb_keys k ON a.id_key_base = k.id WHERE a.id_usuario = ?";
         List<Aplicacao> aplicacoes = new ArrayList<>();
         try {
             PreparedStatement stmt = conexao.prepareStatement(query);
@@ -118,6 +127,8 @@ public class AplicacaoDAO extends DAO {
                 aplicacao.setReadme(rs.getString("readme"));
                 aplicacao.setIdUsuario(rs.getInt("id_usuario"));
                 aplicacao.setNomeBanco(rs.getString("nome_banco"));
+                aplicacao.setIdKeyBase(rs.getInt("id_key_base"));
+                aplicacao.setCodigoKeyBase(rs.getString("codigo_key_base"));
                 
                 String schemaJson = rs.getString("schema_banco");
                 if (schemaJson != null) {
@@ -138,23 +149,24 @@ public class AplicacaoDAO extends DAO {
     }
 
     public List<Aplicacao> buscarComFiltro(AplicacaoFilterDTO filtro) {
-        StringBuilder query = new StringBuilder("SELECT * FROM tb_aplicacao WHERE 1=1");
+        StringBuilder query = new StringBuilder("SELECT a.*, k.codigo as codigo_key_base FROM tb_aplicacao a " +
+                                              "LEFT JOIN tb_keys k ON a.id_key_base = k.id WHERE 1=1");
         List<Object> parametros = new ArrayList<>();
 
         if (filtro.getId() != null) {
-            query.append(" AND id = ?");
+            query.append(" AND a.id = ?");
             parametros.add(filtro.getId());
         }
         if (filtro.getNome() != null && !filtro.getNome().isEmpty()) {
-            query.append(" AND nome ILIKE ?");
+            query.append(" AND a.nome ILIKE ?");
             parametros.add("%" + filtro.getNome() + "%");
         }
         if (filtro.getIdUsuario() != null) {
-            query.append(" AND id_usuario = ?");
+            query.append(" AND a.id_usuario = ?");
             parametros.add(filtro.getIdUsuario());
         }
         if (filtro.getNomeBanco() != null && !filtro.getNomeBanco().isEmpty()) {
-            query.append(" AND nome_banco ILIKE ?");
+            query.append(" AND a.nome_banco ILIKE ?");
             parametros.add("%" + filtro.getNomeBanco() + "%");
         }
 
@@ -173,6 +185,8 @@ public class AplicacaoDAO extends DAO {
                 aplicacao.setReadme(rs.getString("readme"));
                 aplicacao.setIdUsuario(rs.getInt("id_usuario"));
                 aplicacao.setNomeBanco(rs.getString("nome_banco"));
+                aplicacao.setIdKeyBase(rs.getInt("id_key_base"));
+                aplicacao.setCodigoKeyBase(rs.getString("codigo_key_base"));
                 
                 String schemaJson = rs.getString("schema_banco");
                 if (schemaJson != null) {

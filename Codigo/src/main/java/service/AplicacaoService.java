@@ -51,7 +51,9 @@ public class AplicacaoService {
                     aplicacao.getIdUsuario(),
                     nomeUsuario,
                     aplicacao.getNomeBanco(),
-                    aplicacao.getSchemaBanco()
+                    aplicacao.getSchemaBanco(),
+                    aplicacao.getIdKeyBase(),
+                    aplicacao.getCodigoKeyBase()
                 ));
             }
             
@@ -102,7 +104,9 @@ public class AplicacaoService {
                 aplicacao.getIdUsuario(),
                 nomeUsuario,
                 aplicacao.getNomeBanco(),
-                aplicacao.getSchemaBanco()
+                aplicacao.getSchemaBanco(),
+                aplicacao.getIdKeyBase(),
+                aplicacao.getCodigoKeyBase()
             );
             
             return mapper.writeValueAsString(aplicacaoDTO);
@@ -144,7 +148,9 @@ public class AplicacaoService {
                     aplicacao.getIdUsuario(),
                     nomeUsuario,
                     aplicacao.getNomeBanco(),
-                    aplicacao.getSchemaBanco()
+                    aplicacao.getSchemaBanco(),
+                    aplicacao.getIdKeyBase(),
+                    aplicacao.getCodigoKeyBase()
                 ));
             }
             
@@ -205,7 +211,9 @@ public class AplicacaoService {
                     aplicacao.getIdUsuario(),
                     nomeUsuario,
                     aplicacao.getNomeBanco(),
-                    aplicacao.getSchemaBanco()
+                    aplicacao.getSchemaBanco(),
+                    aplicacao.getIdKeyBase(),
+                    aplicacao.getCodigoKeyBase()
                 ));
             }
             
@@ -250,7 +258,20 @@ public class AplicacaoService {
             
             if (aplicacaoDAO.inserir(aplicacao)) {
                 response.status(201);
-                return criarRespostaSucesso(mapper, "Aplicação criada com sucesso");
+                
+                // Criar resposta com informações da aplicação e key criadas
+                Map<String, Object> resposta = new HashMap<>();
+                resposta.put("success", true);
+                resposta.put("message", "Aplicação criada com sucesso");
+                
+                Map<String, Object> data = new HashMap<>();
+                data.put("id", aplicacao.getId());
+                data.put("nome", aplicacao.getNome());
+                data.put("idKeyBase", aplicacao.getIdKeyBase());
+                data.put("codigoKeyBase", aplicacao.getCodigoKeyBase());
+                resposta.put("data", data);
+                
+                return mapper.writeValueAsString(resposta);
             } else {
                 response.status(500);
                 return criarRespostaErro(mapper, "Erro ao criar aplicação");

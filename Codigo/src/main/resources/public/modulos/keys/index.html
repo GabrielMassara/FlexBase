@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlexBase - Gerenciar Keys</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/db.css">
+    <link rel="stylesheet" href="../../assets/css/dashboard.css">
+</head>
+<body>
+    <!-- Floating Glass Navbar -->
+    <nav class="floating-navbar">
+        <div class="navbar-content">
+            <div class="navbar-brand">
+                <h1 class="logo"><img src="../../assets/img/logo.png" alt="FlexBase" width="30px"></h1>
+            </div>
+            <div class="navbar-actions">
+                <button class="btn-glass btn-secondary" onclick="window.location.href='../dashboard/'">
+                    <i class="bi bi-arrow-left"></i>
+                    <span>Voltar</span>
+                </button>
+                <button class="btn-glass btn-secondary">
+                    <i class="bi bi-house"></i>
+                    <span>Homepage</span>
+                </button>
+                <button class="btn-glass btn-secondary">
+                    <i class="bi bi-person-circle"></i>
+                    <span>Meu Perfil</span>
+                </button>
+                <button id="themeToggle" class="btn-glass btn-theme">
+                    <i class="bi bi-sun"></i>
+                </button>
+                <button id="logoutBtn" class="btn-glass" style="background: rgba(220, 53, 69, 0.2); color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.3);">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-container" style="min-height: 100vh;">
+        <!-- Fundo com grade pontilhada -->
+        <div class="canvas-grid"></div>
+        
+        <div class="main-content">
+            <div class="container-fluid">
+                <!-- Cabeçalho da página -->
+                <div class="page-header">
+                    <h1 class="page-title">
+                        <i class="bi bi-key me-3"></i>
+                        Gerenciar Keys
+                    </h1>
+                    <p class="page-subtitle" id="applicationName">Gerencie as chaves de API da aplicação</p>
+                </div>
+
+                <!-- Seção de Ações -->
+                <div class="action-buttons mb-4">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#keyModal">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Nova Key
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="carregarKeys()">
+                        <i class="bi bi-arrow-clockwise me-2"></i>
+                        Atualizar
+                    </button>
+                </div>
+
+                <!-- Loading -->
+                <div id="loading" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
+                </div>
+
+                <!-- Lista de Keys -->
+                <div class="row" id="keysContainer" style="display: none;">
+                    <!-- Keys serão carregadas aqui via JavaScript -->
+                </div>
+
+                <!-- Mensagem quando não há keys -->
+                <div id="emptyState" class="text-center py-5" style="display: none;">
+                    <i class="bi bi-key display-1 text-muted mb-3"></i>
+                    <h3 class="text-muted">Nenhuma key encontrada</h3>
+                    <p class="text-muted">Crie sua primeira key para começar a gerenciar o acesso aos endpoints.</p>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#keyModal">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Criar Primera Key
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para Criar/Editar Key -->
+    <div class="modal fade" id="keyModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="keyModalTitle">Nova Key</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="keyForm">
+                        <input type="hidden" id="keyId">
+                        <input type="hidden" id="keyIdAplicacao">
+                        
+                        <div class="mb-3">
+                            <label for="keyNome" class="form-label">Nome da Key *</label>
+                            <input type="text" class="form-control" id="keyNome" required>
+                            <div class="form-text">Nome identificador para a key (ex: "Key para App Mobile")</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="keyDescricao" class="form-label">Descrição</label>
+                            <textarea class="form-control" id="keyDescricao" rows="3"></textarea>
+                            <div class="form-text">Descrição opcional da finalidade desta key</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="keyAtivo" checked>
+                                <label class="form-check-label" for="keyAtivo">Key Ativa</label>
+                                <div class="form-text">Keys inativas não podem ser utilizadas para autenticação</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Endpoints Associados</label>
+                            <div id="endpointsList" class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                                <div class="text-center text-muted py-3">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                    Carregando endpoints...
+                                </div>
+                            </div>
+                            <div class="form-text">Selecione quais endpoints esta key poderá acessar</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="salvarKey()">
+                        <span id="salvarBtnText">Salvar</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação de Exclusão -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Exclusão</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Tem certeza que deseja excluir a key "<span id="deleteKeyName"></span>"?</p>
+                    <p class="text-warning"><i class="bi bi-exclamation-triangle me-2"></i>Esta ação não pode ser desfeita.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmarExclusao()">
+                        Excluir Key
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container para notificações toast -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1200;"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../assets/js/config.js"></script>
+    <script>
+        let idAplicacao;
+        let keyParaExcluir;
+        let endpoints = [];
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            // Pegar o ID da aplicação da URL
+            const urlParams = new URLSearchParams(window.location.search);
+            idAplicacao = urlParams.get('idAplicacao');
+            
+            if (!idAplicacao) {
+                mostrarToast('Erro: ID da aplicação não fornecido', 'error');
+                setTimeout(() => {
+                    window.location.href = '../dashboard/';
+                }, 2000);
+                return;
+            }
+
+            carregarInformacoesAplicacao();
+            carregarKeys();
+            carregarEndpoints();
+
+            // Theme toggle
+            const themeToggle = document.getElementById('themeToggle');
+            themeToggle?.addEventListener('click', toggleTheme);
+
+            // Logout
+            const logoutBtn = document.getElementById('logoutBtn');
+            logoutBtn?.addEventListener('click', logout);
+        });
+
+        async function carregarInformacoesAplicacao() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${CONFIG.API_BASE_URL}/aplicacoes/${idAplicacao}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const aplicacao = await response.json();
+                    document.getElementById('applicationName').textContent = `Gerencie as chaves de API da aplicação "${aplicacao.nome}"`;
+                } else {
+                    console.error('Erro ao carregar informações da aplicação');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+            }
+        }
+
+        async function carregarKeys() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('keysContainer').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'none';
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${CONFIG.API_BASE_URL}/keys/aplicacao/${idAplicacao}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const keys = await response.json();
+                    exibirKeys(keys);
+                } else if (response.status === 401) {
+                    mostrarToast('Sessão expirada. Faça login novamente.', 'error');
+                    logout();
+                } else {
+                    const error = await response.json();
+                    mostrarToast(error.message || 'Erro ao carregar keys', 'error');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                mostrarToast('Erro ao carregar keys', 'error');
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        async function carregarEndpoints() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${CONFIG.API_BASE_URL}/endpoints/aplicacao/${idAplicacao}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    endpoints = await response.json();
+                } else {
+                    console.error('Erro ao carregar endpoints');
+                    endpoints = [];
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                endpoints = [];
+            }
+        }
+
+        function exibirKeys(keys) {
+            const container = document.getElementById('keysContainer');
+            
+            if (keys.length === 0) {
+                document.getElementById('emptyState').style.display = 'block';
+                return;
+            }
+
+            let html = '';
+            keys.forEach(key => {
+                const statusClass = key.ativo ? 'text-success' : 'text-muted';
+                const statusIcon = key.ativo ? 'bi-check-circle-fill' : 'bi-x-circle-fill';
+                const statusText = key.ativo ? 'Ativa' : 'Inativa';
+                
+                html += `
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="card-title mb-0">${key.nome}</h6>
+                                <span class="${statusClass}">
+                                    <i class="bi ${statusIcon} me-1"></i>
+                                    ${statusText}
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <small class="text-muted">Código:</small>
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" class="form-control font-monospace" value="${key.codigo}" readonly>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="copiarCodigo('${key.codigo}')">
+                                            <i class="bi bi-copy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                ${key.descricao ? `<p class="card-text small text-muted">${key.descricao}</p>` : ''}
+                                
+                                <div class="mb-2">
+                                    <small class="text-muted">Endpoints associados:</small>
+                                    <span class="badge bg-primary rounded-pill">${key.endpointsAssociados ? key.endpointsAssociados.length : 0}</span>
+                                </div>
+                                
+                                <div class="small text-muted">
+                                    Criada em: ${new Date(key.dataCriacao).toLocaleDateString('pt-BR')}
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="btn-group w-100" role="group">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editarKey(${key.id})">
+                                        <i class="bi bi-pencil"></i>
+                                        Editar
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="prepararExclusao(${key.id}, '${key.nome}')">
+                                        <i class="bi bi-trash"></i>
+                                        Excluir
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            container.style.display = 'flex';
+        }
+
+        function abrirModalNovaKey() {
+            document.getElementById('keyModalTitle').textContent = 'Nova Key';
+            document.getElementById('keyForm').reset();
+            document.getElementById('keyId').value = '';
+            document.getElementById('keyIdAplicacao').value = idAplicacao;
+            document.getElementById('keyAtivo').checked = true;
+            document.getElementById('salvarBtnText').textContent = 'Criar Key';
+            
+            exibirEndpointsNoModal([]);
+            
+            const modal = new bootstrap.Modal(document.getElementById('keyModal'));
+            modal.show();
+        }
+
+        async function editarKey(keyId) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${CONFIG.API_BASE_URL}/keys/${keyId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const key = await response.json();
+                    
+                    document.getElementById('keyModalTitle').textContent = 'Editar Key';
+                    document.getElementById('keyId').value = key.id;
+                    document.getElementById('keyIdAplicacao').value = key.idAplicacao;
+                    document.getElementById('keyNome').value = key.nome;
+                    document.getElementById('keyDescricao').value = key.descricao || '';
+                    document.getElementById('keyAtivo').checked = key.ativo;
+                    document.getElementById('salvarBtnText').textContent = 'Salvar Alterações';
+                    
+                    exibirEndpointsNoModal(key.endpointsAssociados || []);
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('keyModal'));
+                    modal.show();
+                } else {
+                    const error = await response.json();
+                    mostrarToast(error.message || 'Erro ao carregar key', 'error');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                mostrarToast('Erro ao carregar key', 'error');
+            }
+        }
+
+        function exibirEndpointsNoModal(endpointsAssociados) {
+            const container = document.getElementById('endpointsList');
+            
+            if (endpoints.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted py-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Nenhum endpoint encontrado para esta aplicação
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            endpoints.forEach(endpoint => {
+                const checked = endpointsAssociados.includes(endpoint.id) ? 'checked' : '';
+                const metodoBadge = getMetodoBadge(endpoint.metodo);
+                
+                html += `
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" value="${endpoint.id}" id="endpoint_${endpoint.id}" ${checked}>
+                        <label class="form-check-label" for="endpoint_${endpoint.id}">
+                            ${metodoBadge} <code>${endpoint.rota}</code>
+                        </label>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function getMetodoBadge(metodo) {
+            const metodos = {
+                1: '<span class="badge bg-success">GET</span>',
+                2: '<span class="badge bg-primary">POST</span>',
+                3: '<span class="badge bg-warning">PUT</span>',
+                4: '<span class="badge bg-danger">DELETE</span>'
+            };
+            return metodos[metodo] || '<span class="badge bg-secondary">UNKNOWN</span>';
+        }
+
+        async function salvarKey() {
+            const keyId = document.getElementById('keyId').value;
+            const nome = document.getElementById('keyNome').value.trim();
+            const descricao = document.getElementById('keyDescricao').value.trim();
+            const ativo = document.getElementById('keyAtivo').checked;
+            
+            if (!nome) {
+                mostrarToast('Nome da key é obrigatório', 'error');
+                return;
+            }
+
+            // Coletar endpoints selecionados
+            const endpointCheckboxes = document.querySelectorAll('#endpointsList input[type="checkbox"]:checked');
+            const endpointsAssociados = Array.from(endpointCheckboxes).map(cb => parseInt(cb.value));
+
+            const keyData = {
+                nome,
+                descricao,
+                ativo,
+                endpointsAssociados
+            };
+
+            if (!keyId) {
+                keyData.idAplicacao = parseInt(idAplicacao);
+            }
+
+            try {
+                const token = localStorage.getItem('token');
+                const url = keyId ? `${CONFIG.API_BASE_URL}/keys/${keyId}` : `${CONFIG.API_BASE_URL}/keys`;
+                const method = keyId ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(keyData)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    mostrarToast(result.message, 'success');
+                    
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('keyModal'));
+                    modal.hide();
+                    
+                    carregarKeys();
+                } else {
+                    const error = await response.json();
+                    mostrarToast(error.message || 'Erro ao salvar key', 'error');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                mostrarToast('Erro ao salvar key', 'error');
+            }
+        }
+
+        function prepararExclusao(keyId, keyNome) {
+            keyParaExcluir = keyId;
+            document.getElementById('deleteKeyName').textContent = keyNome;
+            
+            const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            modal.show();
+        }
+
+        async function confirmarExclusao() {
+            if (!keyParaExcluir) return;
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${CONFIG.API_BASE_URL}/keys/${keyParaExcluir}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    mostrarToast(result.message, 'success');
+                    
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+                    modal.hide();
+                    
+                    carregarKeys();
+                } else {
+                    const error = await response.json();
+                    mostrarToast(error.message || 'Erro ao excluir key', 'error');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                mostrarToast('Erro ao excluir key', 'error');
+            } finally {
+                keyParaExcluir = null;
+            }
+        }
+
+        function copiarCodigo(codigo) {
+            navigator.clipboard.writeText(codigo).then(() => {
+                mostrarToast('Código copiado para a área de transferência!', 'success');
+            }).catch(() => {
+                mostrarToast('Erro ao copiar código', 'error');
+            });
+        }
+
+        // Event listeners para abrir modal
+        document.addEventListener('DOMContentLoaded', function() {
+            const novaKeyBtn = document.querySelector('[data-bs-target="#keyModal"]');
+            novaKeyBtn?.addEventListener('click', abrirModalNovaKey);
+        });
+
+        function mostrarToast(mensagem, tipo = 'info') {
+            const toastContainer = document.querySelector('.toast-container');
+            const toastId = 'toast-' + Date.now();
+            
+            const bgClass = {
+                'success': 'bg-success',
+                'error': 'bg-danger', 
+                'warning': 'bg-warning',
+                'info': 'bg-primary'
+            }[tipo] || 'bg-primary';
+
+            const toast = document.createElement('div');
+            toast.id = toastId;
+            toast.className = `toast ${bgClass} text-white`;
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="toast-body d-flex justify-content-between align-items-center">
+                    ${mensagem}
+                    <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+
+            toastContainer.appendChild(toast);
+            
+            const bsToast = new bootstrap.Toast(toast, {
+                autohide: true,
+                delay: tipo === 'error' ? 5000 : 3000
+            });
+            
+            bsToast.show();
+            
+            toast.addEventListener('hidden.bs.toast', () => {
+                toast.remove();
+            });
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            html.setAttribute('data-bs-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            const icon = document.querySelector('#themeToggle i');
+            icon.className = newTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon';
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '../login/';
+        }
+
+        // Aplicar tema salvo
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+            const icon = document.querySelector('#themeToggle i');
+            if (icon) {
+                icon.className = savedTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon';
+            }
+        }
+    </script>
+</body>
+</html>

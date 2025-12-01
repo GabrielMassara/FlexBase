@@ -9,6 +9,7 @@ import service.EndpointService;
 import service.RegistroService;
 import service.GeradorEndpointsService;
 import service.EndpointExecutorService;
+import service.KeyService;
 import util.AuthFilter;
 
 public class Aplicacao {
@@ -19,7 +20,8 @@ public class Aplicacao {
     private static EndpointService endpointService = new EndpointService();
     private static RegistroService registroService = new RegistroService();
     private static GeradorEndpointsService geradorEndpointsService = new GeradorEndpointsService();
-    private static EndpointExecutorService endpointExecutorService = new EndpointExecutorService();    public static void main(String[] args) {  
+    private static EndpointExecutorService endpointExecutorService = new EndpointExecutorService();
+    private static KeyService keyService = new KeyService();    public static void main(String[] args) {  
     	System.out.println(" ________ ___       _______      ___    ___ ________  ________  ________  _______      \n"
     			+ "|\\  _____\\\\  \\     |\\  ___ \\    |\\  \\  /  /|\\   __  \\|\\   __  \\|\\   ____\\|\\  ___ \\     \n"
     			+ "\\ \\  \\__/\\ \\  \\    \\ \\   __/|   \\ \\  \\/  / | \\  \\|\\ /\\ \\  \\|\\  \\ \\  \\___|\\ \\   __/|    \n"
@@ -55,6 +57,8 @@ public class Aplicacao {
         before("/api/endpoints/*", AuthFilter.authenticate);
         before("/api/registros", AuthFilter.authenticate);
         before("/api/registros/*", AuthFilter.authenticate);
+        before("/api/keys", AuthFilter.authenticate);
+        before("/api/keys/*", AuthFilter.authenticate);
         
         // === ROTAS USUARIOS (PROTEGIDAS) ===
         get("/api/usuarios", (request, response) -> usuarioService.listar(request, response));
@@ -91,6 +95,13 @@ public class Aplicacao {
         post("/api/registros", (request, response) -> registroService.inserir(request, response));
         put("/api/registros/:id", (request, response) -> registroService.atualizar(request, response));
         delete("/api/registros/:id", (request, response) -> registroService.excluir(request, response));
+        
+        // === ROTAS KEYS ===
+        get("/api/keys/aplicacao/:idAplicacao", (request, response) -> keyService.listarPorAplicacao(request, response));
+        get("/api/keys/:id", (request, response) -> keyService.buscarPorId(request, response));
+        post("/api/keys", (request, response) -> keyService.inserir(request, response));
+        put("/api/keys/:id", (request, response) -> keyService.atualizar(request, response));
+        delete("/api/keys/:id", (request, response) -> keyService.excluir(request, response));
         
         // === ROTA PARA GERAR OS ENDPOINTS ===
         before("/api/generateEndpoints/:idAplicacao", AuthFilter.authenticate);

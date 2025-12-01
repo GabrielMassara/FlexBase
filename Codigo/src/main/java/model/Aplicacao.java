@@ -9,6 +9,8 @@ public class Aplicacao {
     private int idUsuario;
     private String nomeBanco;
     private JsonNode schemaBanco;
+    private int idKeyBase;
+    private String codigoKeyBase;
 
     public Aplicacao() {}
 
@@ -77,8 +79,24 @@ public class Aplicacao {
         this.schemaBanco = schemaBanco;
     }
 
+    public int getIdKeyBase() {
+        return idKeyBase;
+    }
+
+    public void setIdKeyBase(int idKeyBase) {
+        this.idKeyBase = idKeyBase;
+    }
+
+    public String getCodigoKeyBase() {
+        return codigoKeyBase;
+    }
+
+    public void setCodigoKeyBase(String codigoKeyBase) {
+        this.codigoKeyBase = codigoKeyBase;
+    }
+
     @Override
     public String toString() {
-        return "Aplicacao [id=" + id + ", nome=" + nome + ", idUsuario=" + idUsuario + ", nomeBanco=" + nomeBanco + "]";
+        return "Aplicacao [id=" + id + ", nome=" + nome + ", idUsuario=" + idUsuario + ", nomeBanco=" + nomeBanco + ", idKeyBase=" + idKeyBase + "]";
     }
 }

@@ -3,44 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FlexBase</title>
+    <title>FlexBase - Database Designer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="../../assets/css/db.css">
+    <link rel="stylesheet" href="../../assets/css/modern-system.css">
+    <link rel="stylesheet" href="../../assets/css/modern-db.css">
 </head>
 <body>
+    <!-- Fundo com grid pattern moderno -->
+    <div class="page-background"></div>
     <!-- Floating Glass Navbar -->
-    <nav class="floating-navbar">
+    <nav class="floating-navbar glass">
         <div class="navbar-content">
             <div class="navbar-brand">
-                <h1 class="logo"><img src="../../assets/img/logo.png" alt="" width="30px"></h1>
+                <img src="../../assets/img/logo.png" alt="FlexBase" width="32" height="32">
+                <span class="font-semibold text-lg">FlexBase</span>
             </div>
             <div class="navbar-actions">
-                <button id="backToDashboardBtn" class="btn-glass btn-secondary" style="display: none;">
+                <button id="backToDashboardBtn" class="btn btn-ghost btn-sm" style="display: none;">
                     <i class="bi bi-arrow-left"></i>
                     <span>Voltar</span>
                 </button>
-                <button id="addTableBtn" class="btn-glass btn-primary">
+                <button id="addTableBtn" class="btn btn-primary btn-sm">
                     <i class="bi bi-plus-lg"></i>
                     <span>Nova Tabela</span>
                 </button>
-                <button id="addRelationshipBtn" class="btn-glass btn-secondary">
+                <button id="addRelationshipBtn" class="btn btn-secondary btn-sm">
                     <i class="bi bi-arrow-left-right"></i>
                     <span>Relacionamento</span>
                 </button>
-                <button id="centerElementsBtn" class="btn-glass btn-secondary">
+                <button id="centerElementsBtn" class="btn btn-outline btn-sm">
                     <i class="bi bi-bullseye"></i>
                     <span>Centralizar</span>
                 </button>
-                <button id="saveSchemaBtn" class="btn-glass btn-success">
+                <button id="saveSchemaBtn" class="btn btn-outline btn-sm db-save-btn">
                     <i class="bi bi-save"></i>
                     <span>Salvar</span>
                 </button>
-                <button id="generateEndpointsBtn" class="btn-glass btn-success">
+                <button id="generateEndpointsBtn" class="btn btn-outline btn-sm db-generate-btn">
                     <i class="bi bi-gear-wide-connected"></i>
                     <span>Gerar Endpoints</span>
                 </button>
-                <button id="themeToggle" class="btn-glass btn-theme" title="Alternar Tema">
+                <button id="themeToggle" class="btn btn-ghost btn-sm" title="Alternar Tema">
                     <i class="bi bi-sun"></i>
                 </button>
             </div>
@@ -49,54 +54,58 @@
 
     <main class="main-container d-flex" style="height: 100vh;">
         <!-- Floating Glass Sidebar -->
-        <aside class="floating-sidebar">
+        <aside class="db-sidebar glass">
             <div class="sidebar-content">
-                <div class="sidebar-section mb-4">
-                    <h5 class="sidebar-title">Tabelas</h5>
+                <div class="sidebar-section">
+                    <h3 class="sidebar-title">Tabelas</h3>
                     <div id="tablesList" class="tables-list"></div>
                 </div>
                 
                 <div class="sidebar-section">
-                    <h5 class="sidebar-title">Propriedades</h5>
+                    <h3 class="sidebar-title">Propriedades</h3>
                     <div id="propertiesPanel" class="properties-panel">
-                        <p class="text-muted text-center m-0">Selecione uma tabela ou campo</p>
+                        <div class="empty-state">
+                            <i class="bi bi-cursor-fill empty-state-icon"></i>
+                            <p class="text-muted text-sm m-0">Selecione uma tabela ou campo</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </aside>
 
-        <section class="canvas-container position-relative overflow-auto" style="width: 100%;">
-            <div id="canvas" class="canvas bg-body position-relative" style="min-height: 100%; min-width: 100%;">
-                <div class="canvas-grid position-absolute top-0 start-0 w-100 h-100"></div>
+        <section class="db-canvas-container">
+            <div id="canvas" class="db-canvas">
+                <div class="canvas-grid"></div>
             </div>
         </section>
     </main>
 
     <!-- Modal para adicionar/editar tabela -->
     <div class="modal fade" id="tableModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content db-modal">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="modalTitle">Nova Tabela</h5>
+                    <h5 class="modal-title font-semibold" id="modalTitle">Nova Tabela</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="tableName" class="form-label">Nome da Tabela:</label>
-                        <input type="text" id="tableName" class="form-control" placeholder="Ex: usuarios">
+                    <div class="form-group">
+                        <label for="tableName" class="label">Nome da Tabela</label>
+                        <input type="text" id="tableName" class="input" placeholder="Ex: usuarios">
                     </div>
                     
-                    <div class="mb-3">
-                        <label class="form-label">Campos:</label>
-                        <div id="fieldsList" class="border rounded p-2 mb-2" style="min-height: 100px;"></div>
-                        <button type="button" id="addFieldBtn" class="btn btn-outline-primary btn-sm">
-                            <i class="bi bi-plus-lg me-1"></i>Adicionar Campo
+                    <div class="form-group">
+                        <label class="label">Campos</label>
+                        <div id="fieldsList" class="fields-container"></div>
+                        <button type="button" id="addFieldBtn" class="btn btn-outline btn-sm">
+                            <i class="bi bi-plus-lg"></i>
+                            <span>Adicionar Campo</span>
                         </button>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" id="saveTableBtn" class="btn btn-primary" onclick="if(window.saveTable) window.saveTable();">Salvar</button>
+                    <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="saveTableBtn" class="btn btn-primary" onclick="if(window.saveTable) window.saveTable();">Salvar Tabela</button>
                 </div>
             </div>
         </div>
@@ -104,40 +113,40 @@
 
     <!-- Modal para adicionar relacionamento -->
     <div class="modal fade" id="relationshipModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content db-modal">
                 <div class="modal-header">
-                    <h5 class="modal-title">Novo Relacionamento</h5>
+                    <h5 class="modal-title font-semibold">Novo Relacionamento</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="sourceTable" class="form-label">Tabela de Origem:</label>
-                        <select id="sourceTable" class="form-select">
+                    <div class="form-group">
+                        <label for="sourceTable" class="label">Tabela de Origem</label>
+                        <select id="sourceTable" class="input">
                             <option value="">Selecione uma tabela</option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label for="sourceField" class="form-label">Campo de Origem:</label>
-                        <select id="sourceField" class="form-select">
+                    <div class="form-group">
+                        <label for="sourceField" class="label">Campo de Origem</label>
+                        <select id="sourceField" class="input">
                             <option value="">Selecione um campo</option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label for="targetTable" class="form-label">Tabela de Destino:</label>
-                        <select id="targetTable" class="form-select">
+                    <div class="form-group">
+                        <label for="targetTable" class="label">Tabela de Destino</label>
+                        <select id="targetTable" class="input">
                             <option value="">Selecione uma tabela</option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label for="targetField" class="form-label">Campo de Destino:</label>
-                        <select id="targetField" class="form-select">
+                    <div class="form-group">
+                        <label for="targetField" class="label">Campo de Destino</label>
+                        <select id="targetField" class="input">
                             <option value="">Selecione um campo</option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label for="relationType" class="form-label">Tipo de Relacionamento:</label>
-                        <select id="relationType" class="form-select">
+                    <div class="form-group">
+                        <label for="relationType" class="label">Tipo de Relacionamento</label>
+                        <select id="relationType" class="input">
                             <option value="belongsTo">Belongs To (N:1)</option>
                             <option value="hasMany">Has Many (1:N)</option>
                             <option value="hasOne">Has One (1:1)</option>
@@ -145,8 +154,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" id="saveRelationshipBtn" class="btn btn-primary">Salvar</button>
+                    <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="saveRelationshipBtn" class="btn btn-primary">Salvar Relacionamento</button>
                 </div>
             </div>
         </div>
@@ -156,6 +165,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../../assets/js/config.js"></script>
+    <script src="../../assets/js/modern-db.js"></script>
     <script>
         // Verificação adicional para garantir que o botão funcione
         window.addEventListener('load', function() {

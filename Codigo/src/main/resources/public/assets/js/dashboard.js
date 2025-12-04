@@ -197,74 +197,28 @@ function loadUserInfo() {
     console.log('Informações do usuário carregadas:', userInfo);
 }
 
-async function loadStats() {
-    const appId = getApplicationIdFromUrl();
-    if (!appId) return;
+function loadStats() {
+    // Carregar estatísticas do dashboard
+    const stats = {
+        totalApps: 0,
+        totalEndpoints: 0,
+        totalTables: 0,
+        activeUsers: 1
+    };
     
-    try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-        
-        // Buscar endpoints
-        const endpointsResponse = await fetch(`${CONFIG.API_BASE_URL}/endpointsManager/aplicacao/${appId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        let endpointsCount = 0;
-        if (endpointsResponse.ok) {
-            const endpoints = await endpointsResponse.json();
-            endpointsCount = endpoints.length;
-        }
-        
-        // Buscar usuários da aplicação
-        const usersResponse = await fetch(`${CONFIG.API_BASE_URL}/aplicacao/${appId}/usuarios`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        let usersCount = 0;
-        if (usersResponse.ok) {
-            const users = await usersResponse.json();
-            usersCount = users.data ? users.data.length : 0;
-        }
-        
-        // Buscar informações da aplicação (para contar tabelas do schema)
-        const appResponse = await fetch(`${CONFIG.API_BASE_URL}/aplicacoes/${appId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        let tablesCount = 0;
-        if (appResponse.ok) {
-            const app = await appResponse.json();
-            if (app.schemaBanco && app.schemaBanco.tabelas) {
-                tablesCount = app.schemaBanco.tabelas.length;
-            }
-        }
-        
-        // Atualizar estatísticas na interface
-        updateStatsDisplay({ endpointsCount, tablesCount, usersCount });
-        
-    } catch (error) {
-        console.error('Erro ao carregar estatísticas:', error);
-    }
+    // Atualizar estatísticas na interface
+    updateStatsDisplay(stats);
 }
 
 function updateStatsDisplay(stats) {
-    const endpointsElement = document.getElementById('endpointsCount');
-    const tablesElement = document.getElementById('tablesCount');
-    const usersElement = document.getElementById('usersCount');
+    const statCards = document.querySelectorAll('.stat-card');
     
-    if (endpointsElement) endpointsElement.textContent = stats.endpointsCount || 0;
-    if (tablesElement) tablesElement.textContent = stats.tablesCount || 0;
-    if (usersElement) usersElement.textContent = stats.usersCount || 0;
+    if (statCards.length >= 4) {
+        statCards[0].querySelector('.stat-number').textContent = stats.totalApps;
+        statCards[1].querySelector('.stat-number').textContent = stats.totalEndpoints;
+        statCards[2].querySelector('.stat-number').textContent = stats.totalTables;
+        statCards[3].querySelector('.stat-number').textContent = stats.activeUsers;
+    }
 }
 
 function checkSelectedApplication() {
